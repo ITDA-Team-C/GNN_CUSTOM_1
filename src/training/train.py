@@ -17,7 +17,7 @@ from src.models.baseline_gcn import GCN
 from src.models.baseline_graphsage import GraphSAGE
 from src.models.baseline_gat import GAT
 from src.models.cage_rf_gnn import CAGERF_GNN
-from src.models.losses import WeightedBCELoss
+from src.models.losses import WeightedBCELoss, FocalLoss, AuxiliaryLoss
 
 set_seed(42)
 
@@ -47,15 +47,20 @@ def load_graph_data(config):
 
 def create_model(model_name, input_dim, config):
     if model_name == "mlp":
-        return MLP(input_dim, hidden_dim=128, dropout=0.3)
+        cfg = config.get("baselines", {}).get("mlp", {})
+        return MLP(input_dim, hidden_dim=cfg.get("hidden_dim", 256), dropout=cfg.get("dropout", 0.3))
     elif model_name == "gcn":
-        return GCN(input_dim, hidden_dim=64, num_layers=2, dropout=0.3)
+        cfg = config.get("baselines", {}).get("gcn", {})
+        return GCN(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), dropout=cfg.get("dropout", 0.3))
     elif model_name == "graphsage":
-        return GraphSAGE(input_dim, hidden_dim=64, num_layers=2, dropout=0.3)
+        cfg = config.get("baselines", {}).get("graphsage", {})
+        return GraphSAGE(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), dropout=cfg.get("dropout", 0.3))
     elif model_name == "gat":
-        return GAT(input_dim, hidden_dim=64, num_layers=2, num_heads=8, dropout=0.3)
+        cfg = config.get("baselines", {}).get("gat", {})
+        return GAT(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), num_heads=cfg.get("num_heads", 8), dropout=cfg.get("dropout", 0.3))
     elif model_name == "cage_rf_gnn":
-        return CAGERF_GNN(input_dim, hidden_dim=64, num_layers=2, dropout=0.3, use_gating=True)
+        cfg = config.get("cage_rf", {})
+        return CAGERF_GNN(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), dropout=cfg.get("dropout", 0.3), use_gating=cfg.get("use_gating", True))
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
@@ -67,11 +72,40 @@ def calculate_pos_weight(y, train_mask):
     return torch.tensor(pos_weight)
 
 
+def create_loss_fn(config, pos_weight, device):
+    loss_cfg = config.get("loss", {})
+    loss_type = loss_cfg.get("type", "weighted_bce")
+    aux_weight = loss_cfg.get("aux_weight", 0.0)
+
+    if loss_type == "focal":
+        alpha = loss_cfg.get("focal_alpha", 0.25)
+        gamma = loss_cfg.get("focal_gamma", 2.0)
+        base_loss = FocalLoss(alpha=alpha, gamma=gamma)
+    else:
+        base_loss = WeightedBCELoss(pos_weight=pos_weight.to(device))
+
+    if aux_weight > 0:
+        return AuxiliaryLoss(main_loss_fn=base_loss, aux_weight=aux_weight)
+    else:
+        return base_loss
+
+
 def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, device):
     model.train()
 
-    logits = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
-    loss = loss_fn(logits[train_mask], y[train_mask].to(device))
+    output = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
+
+    if isinstance(output, tuple):
+        logits, aux_logits = output
+        aux_logits_masked = {k: v[train_mask] for k, v in aux_logits.items()}
+    else:
+        logits = output
+        aux_logits_masked = None
+
+    if isinstance(loss_fn, AuxiliaryLoss):
+        loss = loss_fn(logits[train_mask], y[train_mask].to(device), aux_logits_masked)
+    else:
+        loss = loss_fn(logits[train_mask], y[train_mask].to(device))
 
     optimizer.zero_grad()
     loss.backward()
@@ -85,7 +119,13 @@ def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, de
 def evaluate(model, x, y, edge_index_dict, mask, device):
     model.eval()
 
-    logits = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
+    output = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
+
+    if isinstance(output, tuple):
+        logits = output[0]
+    else:
+        logits = output
+
     logits = logits.detach().cpu().numpy()
 
     y_score = 1 / (1 + np.exp(-logits))
@@ -120,7 +160,7 @@ def train(model_name, config_path):
     model = model.to(device)
 
     pos_weight = calculate_pos_weight(y, train_mask)
-    loss_fn = WeightedBCELoss(pos_weight=pos_weight.to(device))
+    loss_fn = create_loss_fn(config, pos_weight, device)
 
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
 

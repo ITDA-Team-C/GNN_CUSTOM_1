@@ -36,13 +36,18 @@ def evaluate_checkpoint(checkpoint_path):
     edge_index_dict = {k: v.to(device) for k, v in edge_index_dict.items()}
 
     from src.models.cage_rf_gnn import CAGERF_GNN
-    model = CAGERF_GNN(x.shape[1], hidden_dim=64, num_layers=2, dropout=0.3, use_gating=True)
+    cage_rf_config = config.get("cage_rf", {})
+    model = CAGERF_GNN(x.shape[1], hidden_dim=cage_rf_config.get("hidden_dim", 128),
+                       num_layers=cage_rf_config.get("num_layers", 3),
+                       dropout=cage_rf_config.get("dropout", 0.3),
+                       use_gating=cage_rf_config.get("use_gating", True))
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model = model.to(device)
     model.eval()
 
     with torch.no_grad():
-        logits = model(x, edge_index_dict)
+        output = model(x, edge_index_dict)
+        logits = output[0] if isinstance(output, tuple) else output
         logits = logits.detach().cpu().numpy()
 
     y_score = 1 / (1 + np.exp(-logits))
