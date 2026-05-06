@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.utils import set_seed, load_config, save_object, save_json
 from src.utils.metrics import calculate_metrics, find_best_threshold, print_metrics
+from src.utils.html_report import create_html_report
 from src.models.baseline_mlp import MLP
 from src.models.baseline_gcn import GCN
 from src.models.baseline_graphsage import GraphSAGE
@@ -90,7 +91,7 @@ def evaluate(model, x, y, edge_index_dict, mask, device):
     y_score = 1 / (1 + np.exp(-logits))
     y_pred = (y_score >= 0.5).astype(int)
 
-    y_true = y[mask].numpy()
+    y_true = y.cpu().numpy()[mask.numpy()]
 
     metrics = calculate_metrics(y_true, y_score[mask.numpy()], y_pred[mask.numpy()])
 
@@ -169,11 +170,11 @@ def train(model_name, config_path):
     print("\n[Valid Set]")
     print_metrics(valid_metrics, "Validation Metrics")
 
-    best_threshold, _ = find_best_threshold(y[valid_mask].numpy(), valid_scores[valid_mask.numpy()])
+    best_threshold, _ = find_best_threshold(y.cpu().numpy()[valid_mask.numpy()], valid_scores[valid_mask.numpy()])
 
     test_preds_thresholded = (test_scores[test_mask.numpy()] >= best_threshold).astype(int)
     test_metrics_thresholded = calculate_metrics(
-        y[test_mask].numpy(), test_scores[test_mask.numpy()], test_preds_thresholded
+        y.cpu().numpy()[test_mask.numpy()], test_scores[test_mask.numpy()], test_preds_thresholded
     )
 
     print("\n[Test Set]")
@@ -194,6 +195,10 @@ def train(model_name, config_path):
     metrics_path = os.path.join("outputs", f"metrics_{model_name}.json")
     save_json(metrics_dict, metrics_path)
     print(f"[Save] {metrics_path}")
+
+    report_path = os.path.join("outputs", f"report_{model_name}.html")
+    create_html_report(model_name, metrics_dict, report_path)
+    print(f"[Save] {report_path}")
 
     return test_metrics_thresholded
 

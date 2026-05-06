@@ -63,9 +63,10 @@ class CAGERF_GNN(nn.Module):
             self.gate = None
 
         concat_dim = hidden_dim * 6
+        projection_input_dim = hidden_dim if use_gating else concat_dim
 
         self.projection = nn.Sequential(
-            nn.Linear(concat_dim, hidden_dim),
+            nn.Linear(projection_input_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
