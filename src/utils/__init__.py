@@ -1,5 +1,5 @@
 from .seed import set_seed
-from .io import load_config, save_object, load_object
+from .io import load_config, save_object, load_object, save_json, load_json
 from .metrics import calculate_metrics
 
 __all__ = [
@@ -7,5 +7,7 @@ __all__ = [
     "load_config",
     "save_object",
     "load_object",
+    "save_json",
+    "load_json",
     "calculate_metrics",
 ]
