@@ -46,7 +46,7 @@ def load_test_data(config):
     return x, y, edge_index_dict, test_mask, valid_mask, nodes_df
 
 
-def load_model_and_best_threshold(checkpoint_path, config, device):
+def load_model_and_best_threshold(checkpoint_path, config, device, input_dim):
     """Load trained model and best threshold"""
     print(f"\n[Load] 모델 로드 중: {checkpoint_path}")
 
@@ -54,9 +54,9 @@ def load_model_and_best_threshold(checkpoint_path, config, device):
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     model = CAGERF_GNN(
-        input_dim=139,
-        hidden_dim=128,
-        num_layers=3,
+        input_dim=input_dim,
+        hidden_dim=64,
+        num_layers=2,
         dropout=0.3,
         use_gating=True
     )
@@ -238,8 +238,9 @@ def main():
         # Load data
         x, y, edge_index_dict, test_mask, valid_mask, nodes_df = load_test_data(config)
 
-        # Load model and threshold
-        model, best_threshold = load_model_and_best_threshold(args.checkpoint, config, device)
+        # Load model and threshold with actual input dimension
+        actual_input_dim = x.shape[1]
+        model, best_threshold = load_model_and_best_threshold(args.checkpoint, config, device, actual_input_dim)
 
         # Predict
         y_score = predict(model, x, edge_index_dict, device)
