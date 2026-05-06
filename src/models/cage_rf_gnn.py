@@ -78,6 +78,15 @@ class CAGERF_GNN(nn.Module):
             nn.Linear(hidden_dim, 1)
         )
 
+        self.aux_heads = nn.ModuleDict({
+            "rur":      nn.Linear(hidden_dim, 1),
+            "rtr":      nn.Linear(hidden_dim, 1),
+            "rsr":      nn.Linear(hidden_dim, 1),
+            "burst":    nn.Linear(hidden_dim, 1),
+            "semsim":   nn.Linear(hidden_dim, 1),
+            "behavior": nn.Linear(hidden_dim, 1),
+        })
+
         self.dropout = dropout
 
     def forward(self, x, edge_index_dict):
@@ -107,7 +116,16 @@ class CAGERF_GNN(nn.Module):
 
         logit = self.classifier(h_proj).squeeze(-1)
 
-        return logit
+        aux_logits = {
+            "rur":      self.aux_heads["rur"](h_rur).squeeze(-1),
+            "rtr":      self.aux_heads["rtr"](h_rtr).squeeze(-1),
+            "rsr":      self.aux_heads["rsr"](h_rsr).squeeze(-1),
+            "burst":    self.aux_heads["burst"](h_burst).squeeze(-1),
+            "semsim":   self.aux_heads["semsim"](h_semsim).squeeze(-1),
+            "behavior": self.aux_heads["behavior"](h_behavior).squeeze(-1),
+        }
+
+        return logit, aux_logits
 
     def get_relation_contribution(self):
         if hasattr(self, 'last_alpha'):

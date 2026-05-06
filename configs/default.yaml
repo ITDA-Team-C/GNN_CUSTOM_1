@@ -87,10 +87,11 @@ cage_rf:
 
 # Loss and evaluation
 loss:
-  type: "weighted_bce"
+  type: "focal"
   pos_weight_ratio: null  # auto-calculated from data
-  focal_alpha: 0.25
+  focal_alpha: 0.75
   focal_gamma: 2.0
+  aux_weight: 0.3
 
 evaluation:
   metrics:
