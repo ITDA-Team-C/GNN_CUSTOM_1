@@ -53,12 +53,13 @@ def load_model_and_best_threshold(checkpoint_path, config, device, input_dim):
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
+    cage_rf_config = config.get("cage_rf", {})
     model = CAGERF_GNN(
         input_dim=input_dim,
-        hidden_dim=64,
-        num_layers=2,
-        dropout=0.3,
-        use_gating=True
+        hidden_dim=cage_rf_config.get("hidden_dim", 128),
+        num_layers=cage_rf_config.get("num_layers", 3),
+        dropout=cage_rf_config.get("dropout", 0.3),
+        use_gating=cage_rf_config.get("use_gating", True)
     )
 
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
