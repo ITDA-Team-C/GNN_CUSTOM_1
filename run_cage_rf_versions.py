@@ -27,9 +27,11 @@ for i, (version, config) in enumerate(versions, 1):
     print(f"\n[{i}/6] {version.upper()} Training with {config}")
     print("-" * 70)
 
+    model_name = "cage_rf_gnn" if version == "v2" else version
+
     cmd = [
         sys.executable, "-m", "src.training.train",
-        "--model", "cage_rf_gnn",
+        "--model", model_name,
         "--config", config
     ]
 
