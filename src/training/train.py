@@ -146,7 +146,7 @@ def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, de
                 oversample_ratio=None, hard_mining_ratio=None, hard_mining_weight=None):
     model.train()
 
-    output = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
+    output = model(x, edge_index_dict)
 
     if isinstance(output, tuple):
         logits, aux_logits = output
@@ -164,7 +164,8 @@ def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, de
             neg_idx = train_indices[y[train_indices] == 0]
             if len(pos_idx) > 0:
                 n_oversample = int(len(pos_idx) * oversample_ratio)
-                oversampled_pos = pos_idx[torch.randint(0, len(pos_idx), (n_oversample,))]
+                rand_indices = torch.randint(0, len(pos_idx), (n_oversample,), device=device)
+                oversampled_pos = pos_idx[rand_indices]
                 loss_indices = torch.cat([neg_idx, oversampled_pos])
         except Exception as e:
             print(f"[Warning] Oversampling error: {e}")
@@ -231,7 +232,7 @@ def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, de
 def evaluate(model, x, y, edge_index_dict, mask, device):
     model.eval()
 
-    output = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
+    output = model(x, edge_index_dict)
 
     if isinstance(output, tuple):
         logits = output[0]
