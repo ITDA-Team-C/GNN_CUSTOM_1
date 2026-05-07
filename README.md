@@ -26,7 +26,7 @@ python -m src.graph.build_relations   # 모든 relation 구성 & 저장
 ```
 
 ### 3️⃣ 모델 학습
-Baseline 모델 + CAGE-RF GNN 학습 및 최적화
+Baseline 모델 + CAGE-RF GNN (v0~v7) 학습 및 최적화
 
 ```bash
 # Baseline 모델 학습
@@ -35,8 +35,15 @@ python -m src.training.train --model gcn         --config configs/default.yaml
 python -m src.training.train --model graphsage   --config configs/default.yaml
 python -m src.training.train --model gat         --config configs/default.yaml
 
-# 제안 모델 (CAGE-RF GNN) 학습
+# 제안 모델 (CAGE-RF GNN) - Baseline 설정
 python -m src.training.train --model cage_rf_gnn --config configs/default.yaml
+
+# 제안 모델 - 개선 버전들 (v3~v7)
+python train_v3.py --skip-preprocessing --skip-graph  # v3: Branch Ablation
+python train_v4.py --skip-preprocessing --skip-graph  # v4: PR-Curve Threshold
+python train_v5.py --skip-preprocessing --skip-graph  # v5: Oversampling
+python train_v6.py --skip-preprocessing --skip-graph  # v6: Hard Negative Mining
+python train_v7.py --skip-preprocessing --skip-graph  # v7: Ensemble
 ```
 
 ### 4️⃣ 모델 평가
