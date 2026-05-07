@@ -95,7 +95,7 @@ evaluation:
     - "accuracy"
   save_predictions: true
   save_embeddings: true
-  threshold_type: "pr_curve"  # PR-Curve 기반 threshold 선택
+  threshold_type: "macro_f1"  # PR-Curve 위의 F1 최대 지점 선택 = macro_f1 최적화
 
 version: "v4_threshold_pr"
 version_description: "PR-Curve Based Threshold: minority class optimization"
