@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import json
 import os
 
@@ -55,8 +54,8 @@ nodes_df, features = load_data()
 all_metrics = load_all_metrics()
 
 # 모델 선택
-models_list = list(all_metrics.keys())
-selected_model = st.selectbox("📊 분석할 모델 선택", models_list, index=2)  # v4 기본값
+models_list = list(all_metrics.keys()) if all_metrics else []
+selected_model = st.selectbox("📊 분석할 모델 선택", models_list, index=2 if len(models_list) > 2 else 0) if models_list else None
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 전체 성능 비교",
@@ -111,9 +110,8 @@ with tab1:
 
 # Tab 2: 모델별 상세 결과
 with tab2:
-    st.header(f"📊 {selected_model} 상세 결과")
-
-    if selected_model in all_metrics:
+    if selected_model and selected_model in all_metrics:
+        st.header(f"📊 {selected_model} 상세 결과")
         metrics = all_metrics[selected_model]
 
         # 핵심 지표
@@ -138,7 +136,7 @@ with tab2:
         with col2:
             st.metric("Recall", f"{metrics.get('recall', 0):.4f}")
     else:
-        st.info(f"{selected_model}의 결과가 아직 없습니다.")
+        st.info("📊 왼쪽에서 모델을 선택하면 상세 결과가 표시됩니다.")
 
 # Tab 3: 성능 순위
 with tab3:
@@ -158,7 +156,7 @@ with tab3:
         st.markdown("---")
 
         # 막대 그래프
-        st.markdown("### PR-AUC 비교 (상위 10개)")
+        st.markdown("### PR-AUC 비교 (전체 모델)")
         fig_bar = go.Figure(
             data=[go.Bar(
                 x=ranking_df.index,
@@ -214,100 +212,4 @@ with tab4:
 
 st.markdown("---")
 st.markdown("**Legend**: 🔴 CAGE-RF v4 (최고 성능) | 🟦 CAGE-RF v2~v7 | 🟩 Baselines")
-
-    st.info("의심 리뷰를 선택하면 상세 정보와 연결된 리뷰가 표시됩니다.")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        selected_review_id = st.number_input("리뷰 ID 선택", min_value=0, max_value=len(nodes_df)-1)
-
-    with col2:
-        show_neighbors = st.checkbox("연결된 리뷰 표시", value=False)
-
-    if selected_review_id < len(nodes_df):
-        review_data = nodes_df.iloc[selected_review_id]
-
-        st.subheader(f"리뷰 #{selected_review_id}")
-        st.write(f"**사용자**: {review_data['user_id']}")
-        st.write(f"**상품**: {review_data['prod_id']}")
-        st.write(f"**별점**: {'⭐' * int(review_data['rating'])}")
-        st.write(f"**날짜**: {review_data['date']}")
-        st.write(f"**라벨**: {'사기' if review_data['label'] == 1 else '정상'}")
-
-        if "text" in review_data:
-            st.write(f"**내용**: {review_data['text']}")
-
-        if show_neighbors:
-            st.subheader("연결된 의심 리뷰 (Top 5)")
-            st.info("그래프 엣지로 연결된 리뷰들이 표시됩니다. (아직 구현 중)")
-
-with tab4:
-    st.header("Ego Network")
-
-    st.info("선택 리뷰의 주변 네트워크를 시각화합니다. (구현 예정)")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        ego_review_id = st.number_input("ego-network 중심 리뷰 선택", min_value=0, max_value=len(nodes_df)-1, key="ego")
-
-    with col2:
-        hop_limit = st.slider("Hop 제한", min_value=1, max_value=3, value=2)
-
-    st.warning("네트워크 가시화는 모델 학습 후 구현됩니다.")
-
-with tab5:
-    st.header("Relation Contribution")
-
-    st.info("각 relation의 기여도를 bar/radar chart로 표시합니다.")
-
-    fig_contrib = go.Figure(data=[
-        go.Bar(
-            x=["R-U-R", "R-T-R", "R-S-R", "R-Burst-R", "R-SemSim-R", "R-UserBehavior-R"],
-            y=[0.20, 0.18, 0.15, 0.20, 0.15, 0.12],
-            marker_color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
-        )
-    ])
-    fig_contrib.update_layout(
-        title="평균 Relation 기여도 (예상)",
-        xaxis_title="Relation",
-        yaxis_title="Contribution",
-        height=400
-    )
-    st.plotly_chart(fig_contrib, use_container_width=True)
-
-    st.info("💡 실제 값은 모델 학습 후 gating alpha로부터 계산됩니다.")
-
-with tab6:
-    st.header("Threshold Simulator")
-
-    threshold = st.slider(
-        "의심 리뷰 판정 기준값 (Fraud Score Threshold)",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.5,
-        step=0.01
-    )
-
-    st.markdown("---")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("탐지된 리뷰", f"{int((nodes_df['label'] == 1).sum() * (threshold / 0.5))}")
-
-    with col2:
-        st.metric("Precision (예상)", f"{0.75:.2%}")
-
-    with col3:
-        st.metric("Recall (예상)", f"{0.65:.2%}")
-
-    with col4:
-        st.metric("F1 Score (예상)", f"{0.70:.2f}")
-
-    st.info("💡 실제 값은 모델의 fraud_score 예측값과 threshold로부터 계산됩니다.")
-
-st.markdown("---")
-
-st.footer("GNN-based Systematic Abusing Network Detection | ITDA Team C | May 2026")
+st.markdown("**Generated**: 2026-05-07 | **Team**: ITDA Team C")
