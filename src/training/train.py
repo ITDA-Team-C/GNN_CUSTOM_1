@@ -392,7 +392,11 @@ def train(model_name, config_path):
         "test_metrics": test_metrics_thresholded,
     }
 
-    version = config.get("version", model_name)
+    if model_name == "cage_rf_gnn":
+        version = config.get("version", "v2")
+    else:
+        version = model_name
+
     metrics_path = os.path.join("outputs", f"metrics_{version}.json")
     save_json(metrics_dict, metrics_path)
     print(f"[Save] {metrics_path}")
