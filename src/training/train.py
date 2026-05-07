@@ -22,6 +22,50 @@ from src.models.losses import WeightedBCELoss, FocalLoss, AuxiliaryLoss
 set_seed(42)
 
 
+def check_and_preprocess(config):
+    """필요한 전처리 파일 확인, 없으면 자동으로 전처리 실행"""
+    import subprocess
+
+    processed_dir = config["data_processed"]
+    required_files = [
+        os.path.join(processed_dir, "node_samples.csv"),
+        os.path.join(processed_dir, "features.npy"),
+        os.path.join(processed_dir, "edge_index_dict.pt"),
+    ]
+
+    missing_files = [f for f in required_files if not os.path.exists(f)]
+
+    if not missing_files:
+        print(f"[Preprocess] ✅ 모든 파일 존재 (스킵)")
+        return
+
+    print(f"[Preprocess] ❌ 부족한 파일 발견, 전처리 시작...")
+
+    preprocessing_steps = [
+        ("load_yelpzip", "YelpZip CSV 로드"),
+        ("label_convert", "라벨 변환"),
+        ("sampling", "샘플링"),
+        ("feature_engineering", "Feature Engineering"),
+    ]
+
+    for step_name, step_desc in preprocessing_steps:
+        print(f"\n[{step_desc}] 실행 중...")
+        cmd = [sys.executable, "-m", f"src.preprocessing.{step_name}"]
+        result = subprocess.run(cmd, cwd=str(Path(__file__).parent.parent.parent))
+        if result.returncode != 0:
+            print(f"[ERROR] {step_desc} 실패")
+            raise RuntimeError(f"Preprocessing failed at {step_name}")
+
+    print(f"\n[Graph Relations] 엣지 생성 중...")
+    cmd = [sys.executable, "-m", "src.graph.build_relations"]
+    result = subprocess.run(cmd, cwd=str(Path(__file__).parent.parent.parent))
+    if result.returncode != 0:
+        print(f"[ERROR] Graph relations 생성 실패")
+        raise RuntimeError("Graph building failed")
+
+    print(f"\n[Preprocess] ✅ 전처리 완료")
+
+
 def load_graph_data(config):
     processed_dir = config["data_processed"]
 
@@ -217,6 +261,8 @@ def train(model_name, config_path):
 
     print(f"[Train] 모델: {model_name.upper()}")
     print(f"[Device] {device}")
+
+    check_and_preprocess(config)
 
     x, y, edge_index_dict, train_mask, valid_mask, test_mask, nodes_df = load_graph_data(config)
 
