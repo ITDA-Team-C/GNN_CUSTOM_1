@@ -35,15 +35,25 @@ python -m src.training.train --model gcn         --config configs/default.yaml
 python -m src.training.train --model graphsage   --config configs/default.yaml
 python -m src.training.train --model gat         --config configs/default.yaml
 
-# 제안 모델 (CAGE-RF GNN) - Baseline 설정
+# 제안 모델 (CAGE-RF GNN)
+# v2 (Baseline - Focal Loss + Auxiliary Loss, PR-AUC 0.3011)
 python -m src.training.train --model cage_rf_gnn --config configs/default.yaml
 
-# 제안 모델 - 개선 버전들 (v3~v7)
-python train_v3.py --skip-preprocessing --skip-graph  # v3: Branch Ablation
-python train_v4.py --skip-preprocessing --skip-graph  # v4: PR-Curve Threshold
-python train_v5.py --skip-preprocessing --skip-graph  # v5: Oversampling
-python train_v6.py --skip-preprocessing --skip-graph  # v6: Hard Negative Mining
-python train_v7.py --skip-preprocessing --skip-graph  # v7: Ensemble
+# 개선 버전들 (v3~v7)
+# v3: Branch Ablation (상위 4개 relation만 사용)
+python -m src.training.train --model cage_rf_gnn --config configs/v3_ablation.yaml
+
+# v4: PR-Curve Threshold (PR-AUC 기반 threshold 최적화)
+python -m src.training.train --model cage_rf_gnn --config configs/v4_threshold_pr.yaml
+
+# v5: Oversampling (minority class 2배 증폭)
+python -m src.training.train --model cage_rf_gnn --config configs/v5_oversampling.yaml
+
+# v6: Hard Negative Mining (어려운 샘플 중점 학습)
+python -m src.training.train --model cage_rf_gnn --config configs/v6_hard_mining.yaml
+
+# v7: Ensemble (relation별 독립 classifier + 학습 가능한 가중치)
+python -m src.training.train --model cage_rf_gnn --config configs/v7_ensemble.yaml
 ```
 
 ### 4️⃣ 모델 평가
