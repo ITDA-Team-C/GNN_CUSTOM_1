@@ -37,22 +37,12 @@ def evaluate_checkpoint(checkpoint_path):
 
     from src.models.cage_rf_gnn import CAGERF_GNN
 
-    # 기존 checkpoint와의 호환성: 파일명에서 모델명 추출
-    basename = os.path.basename(checkpoint_path)
-
-    # cage_rf_gnn checkpoint는 hidden_dim=64, num_layers=2로 학습됨
-    # (새로 학습된 것들은 config 설정 사용)
-    if "cage_rf_gnn" in basename and "64" in basename or not "128" in basename:
-        # 기존 checkpoint 호환성
-        model = CAGERF_GNN(x.shape[1], hidden_dim=64, num_layers=2,
-                          dropout=0.3, use_gating=True)
-    else:
-        # 새로 학습된 모델: config에서 읽기
-        cage_rf_config = config.get("cage_rf", {})
-        model = CAGERF_GNN(x.shape[1], hidden_dim=cage_rf_config.get("hidden_dim", 128),
-                          num_layers=cage_rf_config.get("num_layers", 3),
-                          dropout=cage_rf_config.get("dropout", 0.3),
-                          use_gating=cage_rf_config.get("use_gating", True))
+    # 새로 학습된 모델은 항상 config에서 읽기
+    cage_rf_config = config.get("cage_rf", {})
+    model = CAGERF_GNN(x.shape[1], hidden_dim=cage_rf_config.get("hidden_dim", 128),
+                      num_layers=cage_rf_config.get("num_layers", 3),
+                      dropout=cage_rf_config.get("dropout", 0.3),
+                      use_gating=cage_rf_config.get("use_gating", True))
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model = model.to(device)
     model.eval()

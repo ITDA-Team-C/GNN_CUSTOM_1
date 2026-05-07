@@ -4,7 +4,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\seank\\\\OneDrive\\\\Desktop\\\\ITDA_TEAM_C\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
       "PowerShell(New-Item *)",
-      "PowerShell(conda create *)"
+      "PowerShell(conda create *)",
+      "Bash(python *)"
     ]
   }
 }
