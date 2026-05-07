@@ -26,7 +26,7 @@ def find_optimal_threshold(checkpoint_path):
     x = torch.FloatTensor(features).to(device)
     y = torch.LongTensor(nodes_df["label"].values).to(device)
 
-    valid_mask = torch.BoolTensor(nodes_df["split"] == "valid")
+    valid_mask = torch.BoolTensor(nodes_df["split"] == "valid").to(device)
 
     edge_index_dict = {k: v.to(device) for k, v in edge_index_dict.items()}
 
@@ -48,8 +48,9 @@ def find_optimal_threshold(checkpoint_path):
         logits = logits.detach().cpu().numpy()
 
     y_score = 1 / (1 + np.exp(-logits))
+    valid_mask_np = valid_mask.cpu().numpy()
     y_true = y[valid_mask].cpu().numpy()
-    y_score_valid = y_score[valid_mask.numpy()]
+    y_score_valid = y_score[valid_mask_np]
 
     print("[Threshold Search] Valid set에서 최적 threshold 탐색 중...")
 

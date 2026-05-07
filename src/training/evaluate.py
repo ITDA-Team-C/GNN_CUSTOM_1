@@ -32,7 +32,7 @@ def evaluate_checkpoint(checkpoint_path):
     x = torch.FloatTensor(features).to(device)
     y = torch.LongTensor(nodes_df["label"].values).to(device)
 
-    test_mask = torch.BoolTensor(nodes_df["split"] == "test")
+    test_mask = torch.BoolTensor(nodes_df["split"] == "test").to(device)
 
     edge_index_dict = {k: v.to(device) for k, v in edge_index_dict.items()}
 
@@ -69,16 +69,17 @@ def evaluate_checkpoint(checkpoint_path):
 
     y_pred = (y_score >= best_threshold).astype(int)
 
-    metrics = calculate_metrics(y_true[test_mask.numpy()], y_score[test_mask.numpy()], y_pred[test_mask.numpy()])
+    test_mask_np = test_mask.cpu().numpy()
+    metrics = calculate_metrics(y_true[test_mask_np], y_score[test_mask_np], y_pred[test_mask_np])
 
     print(f"\n[Evaluation] {checkpoint_path}")
     print_metrics(metrics)
 
-    cm = confusion_matrix(y_true[test_mask.numpy()], y_pred[test_mask.numpy()])
+    cm = confusion_matrix(y_true[test_mask_np], y_pred[test_mask_np])
     print(f"\nConfusion Matrix:")
     print(cm)
 
-    report = classification_report(y_true[test_mask.numpy()], y_pred[test_mask.numpy()])
+    report = classification_report(y_true[test_mask_np], y_pred[test_mask_np])
     print(f"\nClassification Report:")
     print(report)
 
