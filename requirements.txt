@@ -1,7 +1,6 @@
 # Core ML & DL (Python 3.13 compatible)
 torch>=2.11.0
 torch-geometric>=2.6.0
-pyg-lib>=0.3.0
 
 # Data Processing
 pandas>=2.2.0
