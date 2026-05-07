@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import argparse
 import numpy as np
 import pandas as pd
@@ -55,7 +56,16 @@ def evaluate_checkpoint(checkpoint_path):
     y_score = 1 / (1 + np.exp(-logits))
     y_true = y.cpu().numpy()
 
+    # Load best threshold from threshold optimization
     best_threshold = 0.5
+    threshold_results_path = os.path.join("outputs", "threshold_search_results.json")
+    if os.path.exists(threshold_results_path):
+        with open(threshold_results_path, 'r') as f:
+            threshold_data = json.load(f)
+            best_threshold = threshold_data["best_threshold"]
+            print(f"[Threshold] Best threshold 로드: {best_threshold:.3f}")
+    else:
+        print(f"[Threshold] 파일 없음, 기본값 0.5 사용")
 
     y_pred = (y_score >= best_threshold).astype(int)
 
