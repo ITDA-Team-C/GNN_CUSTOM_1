@@ -32,12 +32,12 @@ def main():
 
     models_to_compare = [
         # CAGE-RF versions (v2~v7)
-        ("CAGE-RF v2", f"metrics_cage_rf_gnn.json"),  # v2는 cage_rf_gnn으로 저장됨
-        ("CAGE-RF v3", "metrics_v3.json"),
-        ("CAGE-RF v4", "metrics_v4.json"),
-        ("CAGE-RF v5", "metrics_v5.json"),
-        ("CAGE-RF v6", "metrics_v6.json"),
-        ("CAGE-RF v7", "metrics_v7.json"),
+        ("CAGE-RF v2", "metrics_v2.json"),
+        ("CAGE-RF v3", "metrics_v3_ablation.json"),
+        ("CAGE-RF v4", "metrics_v4_threshold_pr.json"),
+        ("CAGE-RF v5", "metrics_v5_oversampling.json"),
+        ("CAGE-RF v6", "metrics_v6_hard_mining.json"),
+        ("CAGE-RF v7", "metrics_v7_ensemble.json"),
         # Baselines
         ("MLP", "metrics_mlp.json"),
         ("GCN", "metrics_gcn.json"),
