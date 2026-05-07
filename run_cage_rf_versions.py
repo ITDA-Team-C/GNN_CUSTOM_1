@@ -30,7 +30,9 @@ for i, (version, config) in enumerate(versions, 1):
     cmd = [
         sys.executable, "-m", "src.training.train",
         "--model", "cage_rf_gnn",
-        "--config", config
+        "--config", config,
+        "--skip-preprocessing",  # Use preprocess.py 결과 재사용
+        "--skip-graph"           # 동일한 그래프 재사용 (모든 모델에 동일)
     ]
 
     version_start = time.time()

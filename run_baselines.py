@@ -23,7 +23,9 @@ for i, model in enumerate(baselines, 1):
     cmd = [
         sys.executable, "-m", "src.training.train",
         "--model", model,
-        "--config", "configs/default.yaml"
+        "--config", "configs/default.yaml",
+        "--skip-preprocessing",  # Use preprocess.py 결과 재사용
+        "--skip-graph"           # 동일한 그래프 재사용
     ]
 
     model_start = time.time()

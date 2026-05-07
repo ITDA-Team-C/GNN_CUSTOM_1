@@ -18,6 +18,7 @@ from src.preprocessing.feature_engineering import (
     extract_text_embedding, extract_numeric_features,
     normalize_features, concatenate_features, save_features
 )
+from src.graph.build_relations import build_all_relations, convert_to_undirected, print_statistics, save_relations, load_data as graph_load_data
 
 set_seed(42)
 
@@ -72,14 +73,27 @@ def main():
     features = concatenate_features(text_features_norm, numeric_features_norm)
     print(f"✅ Feature Engineering 완료: {features.shape}")
 
-    # Step 5: Save
-    print("\n[Step 5/5] 데이터 저장...")
+    # Step 5: Save Features
+    print("\n[Step 5/6] Feature 저장...")
     combined_features = save_features(sampled_df, features)
-    print("✅ 전처리 완료! 데이터가 data/processed/에 저장되었습니다.")
+
+    # Step 6: Graph Construction
+    print("\n[Step 6/6] Multi-Relation 그래프 구성 중...")
+    df_for_graph, features_for_graph = graph_load_data()
+
+    edge_index_dict = build_all_relations(df_for_graph, features_for_graph)
+
+    for relation_name in edge_index_dict:
+        edge_index_dict[relation_name] = convert_to_undirected(edge_index_dict[relation_name])
+
+    total_edges = print_statistics(edge_index_dict)
+    save_relations(edge_index_dict, df_for_graph)
+    print("✅ 그래프 구성 완료!")
 
     print("\n" + "="*80)
-    print("✨ 이제 대시보드를 실행할 수 있습니다:")
+    print("✨ 전처리 완료! 이제 대시보드 또는 학습을 시작할 수 있습니다:")
     print("   streamlit run dashboard/app.py")
+    print("   python run_cage_rf_versions.py")
     print("="*80 + "\n")
 
 
