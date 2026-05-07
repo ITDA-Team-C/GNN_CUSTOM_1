@@ -141,7 +141,7 @@ def save_predictions(nodes_df, y_score, y_pred, best_threshold, output_path="out
     # Top suspicious reviews
     top_fraud = results_df.nlargest(10, "fraud_score")
     print(f"\n🔴 Top 10 Suspicious Reviews:")
-    print(top_fraud[["review_id", "user_id", "prod_id", "fraud_score", "true_label", "pred_label"]].to_string())
+    print(top_fraud[["review_id", "user_id", "prod_id", "fraud_score", "label", "pred_label"]].to_string())
 
     return results_df
 
