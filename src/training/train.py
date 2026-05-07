@@ -352,11 +352,16 @@ def train(model_name, config_path):
     evaluation_cfg = config.get("evaluation", {})
     threshold_metric = evaluation_cfg.get("threshold_type", "macro_f1")
 
-    best_threshold, _ = find_best_threshold(
+    best_threshold, best_threshold_score = find_best_threshold(
         y.cpu().numpy()[valid_mask.numpy()],
         valid_scores[valid_mask.numpy()],
         metric=threshold_metric
     )
+
+    print(f"\n[Threshold Optimization]")
+    print(f"  Metric: {threshold_metric}")
+    print(f"  Best Threshold: {best_threshold:.4f}")
+    print(f"  Score: {best_threshold_score:.4f}")
 
     test_preds_thresholded = (test_scores[test_mask.numpy()] >= best_threshold).astype(int)
     test_metrics_thresholded = calculate_metrics(
