@@ -1,0 +1,100 @@
+# V7: Ensemble (Per-Relation Classifiers)
+# Gating mechanism 대신 각 relation별 독립적인 fraud classifier 사용
+# Learnable ensemble weights로 relation의 기여도를 학습하여 설명가능성 향상
+
+random_state: 42
+
+data_raw: "data/raw"
+data_interim: "data/interim"
+data_processed: "data/processed"
+output_dir: "outputs"
+
+sampling:
+  target_nodes: 25000
+  min_nodes: 10000
+  max_nodes: 50000
+  random_state: 42
+
+train_ratio: 0.64
+valid_ratio: 0.16
+test_ratio: 0.20
+
+feature_engineering:
+  tfidf_max_features: 50000
+  tfidf_min_df: 3
+  tfidf_max_df: 0.9
+  tfidf_ngram_range: [1, 2]
+  svd_components: 128
+  use_standardscaler: true
+
+relations:
+  rur_k: 10
+  rtr_k: 10
+  rsr_k: 10
+  burst_days: 7
+  burst_rating_diff: 1
+  semsim_k: 5
+  semsim_prod_only: true
+  behavior_k: 5
+
+training:
+  batch_size: 1024
+  learning_rate: 0.001
+  num_epochs: 200
+  early_stopping_patience: 20
+  validation_interval: 5
+  device: "cuda"
+
+model:
+  hidden_dim: 128
+  num_layers: 3
+  dropout: 0.3
+  activation: "relu"
+
+baselines:
+  mlp:
+    hidden_dim: 256
+    num_layers: 3
+    dropout: 0.3
+  gcn:
+    hidden_dim: 128
+    num_layers: 3
+    dropout: 0.3
+  graphsage:
+    hidden_dim: 128
+    num_layers: 3
+    dropout: 0.3
+  gat:
+    hidden_dim: 128
+    num_layers: 3
+    num_heads: 8
+    dropout: 0.3
+
+cage_rf:
+  hidden_dim: 128
+  num_layers: 3
+  dropout: 0.3
+  use_gating: false  # Gating 비활성화, Ensemble 사용
+  use_ensemble: true  # Ensemble 모드 활성화
+  selected_relations: ["burst", "rur", "semsim", "rtr"]
+
+loss:
+  type: "focal"
+  pos_weight_ratio: null
+  focal_alpha: 0.75
+  focal_gamma: 2.0
+  aux_weight: 0.3
+
+evaluation:
+  metrics:
+    - "pr_auc"
+    - "macro_f1"
+    - "roc_auc"
+    - "precision"
+    - "recall"
+    - "accuracy"
+  save_predictions: true
+  save_embeddings: true
+
+version: "v7_ensemble"
+version_description: "Ensemble: per-relation classifiers with learnable weights"

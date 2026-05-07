@@ -60,7 +60,15 @@ def create_model(model_name, input_dim, config):
         return GAT(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), num_heads=cfg.get("num_heads", 8), dropout=cfg.get("dropout", 0.3))
     elif model_name == "cage_rf_gnn":
         cfg = config.get("cage_rf", {})
-        return CAGERF_GNN(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), dropout=cfg.get("dropout", 0.3), use_gating=cfg.get("use_gating", True))
+        return CAGERF_GNN(
+            input_dim,
+            hidden_dim=cfg.get("hidden_dim", 128),
+            num_layers=cfg.get("num_layers", 3),
+            dropout=cfg.get("dropout", 0.3),
+            use_gating=cfg.get("use_gating", True),
+            use_ensemble=cfg.get("use_ensemble", False),
+            selected_relations=cfg.get("selected_relations", None)
+        )
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
@@ -90,22 +98,82 @@ def create_loss_fn(config, pos_weight, device):
         return base_loss
 
 
-def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, device):
+def train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, device,
+                oversample_ratio=None, hard_mining_ratio=None, hard_mining_weight=None):
     model.train()
 
     output = model(x.to(device), {k: v.to(device) for k, v in edge_index_dict.items()})
 
     if isinstance(output, tuple):
         logits, aux_logits = output
-        aux_logits_masked = {k: v[train_mask] for k, v in aux_logits.items()}
     else:
         logits = output
-        aux_logits_masked = None
+        aux_logits = None
+
+    train_indices = train_mask.nonzero(as_tuple=True)[0]
+    loss_indices = train_indices
+    hard_indices = None
+
+    if oversample_ratio is not None and oversample_ratio > 1.0:
+        try:
+            pos_idx = train_indices[y[train_indices] == 1]
+            neg_idx = train_indices[y[train_indices] == 0]
+            if len(pos_idx) > 0:
+                n_oversample = int(len(pos_idx) * oversample_ratio)
+                oversampled_pos = pos_idx[torch.randint(0, len(pos_idx), (n_oversample,))]
+                loss_indices = torch.cat([neg_idx, oversampled_pos])
+        except Exception as e:
+            print(f"[Warning] Oversampling error: {e}")
+            pass
+
+    if hard_mining_ratio is not None and hard_mining_ratio > 0:
+        try:
+            with torch.no_grad():
+                probs = torch.sigmoid(logits.detach())
+                neg_idx = loss_indices[y[loss_indices] == 0]
+                hard_neg = torch.tensor([], dtype=torch.long, device=device)
+                if len(neg_idx) > 0:
+                    neg_scores = probs[neg_idx]
+                    k_neg = max(1, int(len(neg_idx) * hard_mining_ratio))
+                    hard_neg = neg_idx[neg_scores.topk(min(k_neg, len(neg_idx))).indices]
+
+                pos_idx = loss_indices[y[loss_indices] == 1]
+                hard_pos = torch.tensor([], dtype=torch.long, device=device)
+                if len(pos_idx) > 0:
+                    pos_scores = probs[pos_idx]
+                    k_pos = max(1, int(len(pos_idx) * hard_mining_ratio))
+                    hard_pos = pos_idx[pos_scores.topk(min(k_pos, len(pos_idx)), largest=False).indices]
+
+                if len(hard_neg) > 0 or len(hard_pos) > 0:
+                    hard_indices = torch.cat([hard_neg, hard_pos])
+        except Exception as e:
+            print(f"[Warning] Hard mining error: {e}")
+            hard_indices = None
 
     if isinstance(loss_fn, AuxiliaryLoss):
-        loss = loss_fn(logits[train_mask], y[train_mask].to(device), aux_logits_masked)
+        aux_logits_for_loss = {k: v[loss_indices] for k, v in aux_logits.items()} if aux_logits else None
+        main_loss = loss_fn(logits[loss_indices], y[loss_indices].to(device), aux_logits_for_loss)
+
+        if hard_indices is not None and len(hard_indices) > 0:
+            try:
+                aux_logits_for_hard = {k: v[hard_indices] for k, v in aux_logits.items()} if aux_logits else None
+                hard_loss = loss_fn(logits[hard_indices], y[hard_indices].to(device), aux_logits_for_hard)
+                loss = main_loss + (hard_mining_weight or 0.5) * hard_loss
+            except Exception as e:
+                print(f"[Warning] Hard mining loss error: {e}")
+                loss = main_loss
+        else:
+            loss = main_loss
     else:
-        loss = loss_fn(logits[train_mask], y[train_mask].to(device))
+        loss = loss_fn(logits[loss_indices], y[loss_indices].to(device))
+
+        if hard_indices is not None and len(hard_indices) > 0:
+            try:
+                hard_loss = loss_fn(logits[hard_indices], y[hard_indices].to(device))
+                loss = loss + (hard_mining_weight or 0.5) * hard_loss
+            except Exception as e:
+                print(f"[Warning] Hard mining loss error: {e}")
+                pass
 
     optimizer.zero_grad()
     loss.backward()
@@ -170,8 +238,33 @@ def train(model_name, config_path):
     best_model_state = None
     patience_counter = 0
 
+    training_cfg = config.get("training", {})
+    oversample_ratio = training_cfg.get("oversample_ratio", None)
+    hard_mining_ratio = training_cfg.get("hard_mining_ratio", None)
+    hard_mining_weight = training_cfg.get("hard_mining_weight", 0.5)
+
+    try:
+        oversample_ratio = float(oversample_ratio) if oversample_ratio else None
+    except (ValueError, TypeError):
+        oversample_ratio = None
+
+    try:
+        hard_mining_ratio = float(hard_mining_ratio) if hard_mining_ratio else None
+    except (ValueError, TypeError):
+        hard_mining_ratio = None
+
+    try:
+        hard_mining_weight = float(hard_mining_weight)
+    except (ValueError, TypeError):
+        hard_mining_weight = 0.5
+
     for epoch in range(config["training"]["num_epochs"]):
-        loss = train_epoch(model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, device)
+        loss = train_epoch(
+            model, x, y, edge_index_dict, train_mask, optimizer, loss_fn, device,
+            oversample_ratio=oversample_ratio,
+            hard_mining_ratio=hard_mining_ratio,
+            hard_mining_weight=hard_mining_weight
+        )
 
         if (epoch + 1) % config["training"]["validation_interval"] == 0:
             valid_metrics, _, _ = evaluate(model, x, y, edge_index_dict, valid_mask, device)
