@@ -90,7 +90,9 @@ def predict(model, x, edge_index_dict, device):
     x = x.to(device)
     edge_index_dict = {k: v.to(device) for k, v in edge_index_dict.items()}
 
-    logits = model(x, edge_index_dict)
+    output = model(x, edge_index_dict)
+    # Handle tuple return (logits, aux_logits_dict) or just logits
+    logits = output[0] if isinstance(output, tuple) else output
     logits = logits.detach().cpu().numpy()
 
     y_score = 1 / (1 + np.exp(-logits))
