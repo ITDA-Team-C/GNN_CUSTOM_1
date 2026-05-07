@@ -44,22 +44,19 @@ def main():
 
     # Step 3: Sampling
     print("\n[Step 3/5] 샘플링 (25,000 nodes)...")
-    sampled_df = product_user_time_hybrid_sampling(df, n_samples=25000)
-    train_df, valid_df, test_df = train_val_test_split(sampled_df)
+    sampled_df = product_user_time_hybrid_sampling(df)
+    sampled_df = train_val_test_split(sampled_df)
 
-    print(f"✅ 샘플링 완료")
-    print(f"   - Train: {len(train_df)} ({len(train_df)/len(sampled_df)*100:.1f}%)")
-    print(f"   - Valid: {len(valid_df)} ({len(valid_df)/len(sampled_df)*100:.1f}%)")
-    print(f"   - Test:  {len(test_df)} ({len(test_df)/len(sampled_df)*100:.1f}%)")
+    print(f"✅ 샘플링 및 분할 완료")
 
-    sampled_df = save_sampled_data(sampled_df, train_df, valid_df, test_df)
+    save_sampled_data(sampled_df)
 
     # Step 4: Feature Engineering
     print("\n[Step 4/5] Feature Engineering...")
 
     # Text embedding (TF-IDF → SVD 128D)
     print("   - 텍스트 임베딩 (TF-IDF → SVD 128D)...")
-    text_features = extract_text_embedding(sampled_df, n_components=128)
+    text_features, vectorizer, svd = extract_text_embedding(sampled_df)
 
     # Numeric features
     print("   - 정형 특징 추출...")
@@ -67,8 +64,9 @@ def main():
 
     # Normalize
     print("   - 정규화...")
-    text_features_norm = normalize_features(text_features)
-    numeric_features_norm = normalize_features(numeric_features)
+    text_features_norm, numeric_features_norm, text_scaler, numeric_scaler = normalize_features(
+        text_features, numeric_features.values
+    )
 
     # Concatenate
     features = concatenate_features(text_features_norm, numeric_features_norm)
@@ -76,7 +74,7 @@ def main():
 
     # Step 5: Save
     print("\n[Step 5/5] 데이터 저장...")
-    save_features(features, sampled_df)
+    combined_features = save_features(sampled_df, features)
     print("✅ 전처리 완료! 데이터가 data/processed/에 저장되었습니다.")
 
     print("\n" + "="*80)
