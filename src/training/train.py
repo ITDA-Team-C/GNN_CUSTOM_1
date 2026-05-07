@@ -244,9 +244,10 @@ def evaluate(model, x, y, edge_index_dict, mask, device):
     y_score = 1 / (1 + np.exp(-logits))
     y_pred = (y_score >= 0.5).astype(int)
 
-    y_true = y.cpu().numpy()[mask.numpy()]
+    mask_np = mask.cpu().numpy()
+    y_true = y.cpu().numpy()[mask_np]
 
-    metrics = calculate_metrics(y_true, y_score[mask.numpy()], y_pred[mask.numpy()])
+    metrics = calculate_metrics(y_true, y_score[mask_np], y_pred[mask_np])
 
     return metrics, y_score, y_pred
 
