@@ -391,11 +391,13 @@ def train(model_name, config_path):
         "valid_metrics": valid_metrics,
         "test_metrics": test_metrics_thresholded,
     }
-    metrics_path = os.path.join("outputs", f"metrics_{model_name}.json")
+
+    version = config.get("version", model_name)
+    metrics_path = os.path.join("outputs", f"metrics_{version}.json")
     save_json(metrics_dict, metrics_path)
     print(f"[Save] {metrics_path}")
 
-    report_path = os.path.join("outputs", f"report_{model_name}.html")
+    report_path = os.path.join("outputs", f"report_{version}.html")
     create_html_report(model_name, metrics_dict, report_path)
     print(f"[Save] {report_path}")
 

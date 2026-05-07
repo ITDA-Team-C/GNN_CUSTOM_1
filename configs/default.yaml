@@ -103,3 +103,6 @@ evaluation:
     - "accuracy"
   save_predictions: true
   save_embeddings: true
+
+version: "v2"
+version_description: "Baseline: Focal Loss + Auxiliary Loss"
