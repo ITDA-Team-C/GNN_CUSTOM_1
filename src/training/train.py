@@ -268,6 +268,9 @@ def train(model_name, config_path):
 
     x = x.to(device)
     y = y.to(device)
+    train_mask = train_mask.to(device)
+    valid_mask = valid_mask.to(device)
+    test_mask = test_mask.to(device)
     edge_index_dict = {k: v.to(device) for k, v in edge_index_dict.items()}
 
     model = create_model(model_name, x.shape[1], config)
