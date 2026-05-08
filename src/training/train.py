@@ -112,11 +112,11 @@ def create_model(model_name, input_dim, config):
         cfg = config.get("cage_rf", {})
         extra_kwargs = {}
 
-        if model_name in ["cage_rf_gnn_gat"]:
+        if "gat" in model_name:
             extra_kwargs["heads"] = cfg.get("heads", 8)
-        elif model_name in ["cage_rf_gnn_cheb", "cage_rf_gnn_tag"]:
+        elif "cheb" in model_name or "tag" in model_name:
             extra_kwargs["K"] = cfg.get("K", 3)
-        elif model_name in ["cage_rf_gnn_sg"]:
+        elif "sg" in model_name:
             extra_kwargs["K"] = cfg.get("K", 2)
 
         return CAGERF_GNN(

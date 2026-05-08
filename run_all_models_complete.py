@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 모든 모델 통합 학습 스크립트
-CAGE-RF v2~v7 (6) + Baseline (4) + GNN Benchmark (7) = 17개 모델
+CAGE-RF v2~v7 (6) + Baseline (4) + GNN Benchmark v2~v7 (7 GNN × 6 versions = 42) = 52개 모델
 순서대로 학습 및 결과 비교
 
 폴더 구조:
   outputs/
   ├── cage_rf_gnn/           (v2~v7 + Baselines)
-  └── benchmark/{GNN_TYPE}/  (SAGE, GAT, GCN, GraphConv, Cheb, TAG, SG)
+  └── benchmark/{GNN_TYPE}/  (SAGE, GAT, GCN, GraphConv, Cheb, TAG, SG × v2~v7)
 """
 import subprocess
 import sys
@@ -36,15 +36,30 @@ BASELINES = [
     ("gat", "configs/default.yaml"),
 ]
 
-GNN_BENCHMARKS = [
-    ("SAGE", "cage_rf_gnn_sage", "GraphSAGE", "configs/v7_ensemble.yaml"),
-    ("GAT", "cage_rf_gnn_gat", "Graph Attention Network", "configs/v7_ensemble.yaml"),
-    ("GCN", "cage_rf_gnn_gcn", "Graph Convolutional Network", "configs/v7_ensemble.yaml"),
-    ("GraphConv", "cage_rf_gnn_graphconv", "Graph Convolution", "configs/v7_ensemble.yaml"),
-    ("Cheb", "cage_rf_gnn_cheb", "Chebyshev", "configs/v7_ensemble.yaml"),
-    ("TAG", "cage_rf_gnn_tag", "Topology Adaptive GCN", "configs/v7_ensemble.yaml"),
-    ("SG", "cage_rf_gnn_sg", "Simplifying GCNs", "configs/v7_ensemble.yaml"),
+GNN_BENCHMARKS = []
+GNN_LAYERS = [
+    ("SAGE", "cage_rf_gnn_sage", "GraphSAGE"),
+    ("GAT", "cage_rf_gnn_gat", "Graph Attention Network"),
+    ("GCN", "cage_rf_gnn_gcn", "Graph Convolutional Network"),
+    ("GraphConv", "cage_rf_gnn_graphconv", "Graph Convolution"),
+    ("Cheb", "cage_rf_gnn_cheb", "Chebyshev"),
+    ("TAG", "cage_rf_gnn_tag", "Topology Adaptive GCN"),
+    ("SG", "cage_rf_gnn_sg", "Simplifying GCNs"),
 ]
+
+GNN_VERSIONS = [
+    ("v2", "configs/default.yaml"),
+    ("v3", "configs/v3_ablation.yaml"),
+    ("v4", "configs/v4_threshold_pr.yaml"),
+    ("v5", "configs/v5_oversampling.yaml"),
+    ("v6", "configs/v6_hard_mining.yaml"),
+    ("v7", "configs/v7_ensemble.yaml"),
+]
+
+for name, base_model, desc in GNN_LAYERS:
+    for version, config in GNN_VERSIONS:
+        model_name = f"{base_model}_{version}"
+        GNN_BENCHMARKS.append((f"{name}", model_name, f"{desc} {version}", config))
 
 def run_training(cmd, model_name, timeout=3600):
     """학습 실행 헬퍼 함수"""
@@ -64,7 +79,11 @@ def run_training(cmd, model_name, timeout=3600):
 print("\n" + "=" * 100)
 print("🚀 COMPLETE MODEL TRAINING PIPELINE")
 print("=" * 100)
-print(f"Total Models: {len(CAGE_RF_VERSIONS) + len(BASELINES) + len(GNN_BENCHMARKS)} (CAGE-RF v2~v7: 6 + Baselines: 4 + GNN Benchmarks: 7)")
+total_models = len(CAGE_RF_VERSIONS) + len(BASELINES) + len(GNN_BENCHMARKS)
+print(f"Total Models: {total_models}")
+print(f"  - CAGE-RF v2~v7: {len(CAGE_RF_VERSIONS)}")
+print(f"  - Baselines: {len(BASELINES)}")
+print(f"  - GNN Benchmarks (v2~v7): {len(GNN_BENCHMARKS)} ({len(GNN_LAYERS)} GNN × 6 versions)")
 print("=" * 100)
 
 start_time = time.time()
@@ -139,12 +158,12 @@ for i, (model, config) in enumerate(BASELINES, 1):
 # 3. GNN Layer Benchmark 학습
 # ============================================================================
 print("\n" + "=" * 100)
-print("[Phase 3/3] GNN Layer Benchmark (v7 Ensemble)")
+print("[Phase 3/3] GNN Layer Benchmark (v2~v7 All Versions)")
 print("-" * 100)
 
 gnn_results = []
 for i, (name, model, desc, config) in enumerate(GNN_BENCHMARKS, 1):
-    print(f"\n[3-{i}/7] {name} - {desc}")
+    print(f"\n[3-{i}/{len(GNN_BENCHMARKS)}] {name} - {desc}")
     print("⏱️  Starting at", time.strftime('%H:%M:%S'))
 
     cmd = [
@@ -160,13 +179,13 @@ for i, (name, model, desc, config) in enumerate(GNN_BENCHMARKS, 1):
     elapsed = time.time() - model_start
 
     if success:
-        print(f"✅ {name} completed in {elapsed:.1f}s")
-        gnn_results.append((f"GNN {name} v7", "SUCCESS", elapsed))
-        all_results.append((f"GNN {name} v7", "SUCCESS", elapsed))
+        print(f"✅ {name} - {desc} completed in {elapsed:.1f}s")
+        gnn_results.append((f"GNN {name} {desc.split()[-1]}", "SUCCESS", elapsed))
+        all_results.append((f"GNN {name} {desc.split()[-1]}", "SUCCESS", elapsed))
     else:
-        print(f"❌ {name} failed")
-        gnn_results.append((f"GNN {name} v7", "FAILED", elapsed))
-        all_results.append((f"GNN {name} v7", "FAILED", elapsed))
+        print(f"❌ {name} - {desc} failed")
+        gnn_results.append((f"GNN {name} {desc.split()[-1]}", "FAILED", elapsed))
+        all_results.append((f"GNN {name} {desc.split()[-1]}", "FAILED", elapsed))
 
 # ============================================================================
 # 최종 결과 요약
@@ -187,11 +206,11 @@ for name, status, elapsed in baseline_results:
     icon = "✅" if status == "SUCCESS" else "❌"
     print(f"{icon} {name:20s} | {status:8s} | {elapsed:7.1f}s")
 
-print("\n[Phase 3] GNN Layer Benchmark")
+print("\n[Phase 3] GNN Layer Benchmark (v2~v7)")
 print("-" * 100)
 for name, status, elapsed in gnn_results:
     icon = "✅" if status == "SUCCESS" else "❌"
-    print(f"{icon} {name:20s} | {status:8s} | {elapsed:7.1f}s")
+    print(f"{icon} {name:30s} | {status:8s} | {elapsed:7.1f}s")
 
 # 통계
 print("\n" + "=" * 100)
