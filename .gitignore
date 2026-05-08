@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data & Models (Generated locally)
+data/raw/*.csv
+data/interim/*.csv
+data/interim/*.txt
+data/processed/*.pt
+data/processed/*.npy
+data/processed/*.json
+
+outputs/
+results/
+logs/
+
+# PyTorch
+*.pt
+*.pth
+*.ckpt
+
+# Large files
+*.pkl
+*.pickle
+*.h5
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.bak
+*.log
