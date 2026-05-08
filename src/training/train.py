@@ -446,6 +446,10 @@ if __name__ == "__main__":
                             "cage_rf_gnn_sg"
                         ])
     parser.add_argument("--config", type=str, default="configs/default.yaml")
+    parser.add_argument("--skip-preprocessing", action="store_true",
+                        help="Skip preprocessing and use existing data")
+    parser.add_argument("--skip-graph", action="store_true",
+                        help="Skip graph building and use existing edge_index_dict")
     args = parser.parse_args()
 
     metrics = train(args.model, args.config)

@@ -22,6 +22,10 @@ import sys
 import time
 import os
 
+# UTF-8 인코딩 설정 (Windows 호환성)
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 models = [
     ("SAGE", "cage_rf_gnn_sage", "GraphSAGE"),
     ("GAT", "cage_rf_gnn_gat", "Graph Attention Network"),
