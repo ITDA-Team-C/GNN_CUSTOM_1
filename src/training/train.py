@@ -16,7 +16,6 @@ from src.models.baseline_mlp import MLP
 from src.models.baseline_gcn import GCN
 from src.models.baseline_graphsage import GraphSAGE
 from src.models.baseline_gat import GAT
-from src.models.cage_rf_gnn import CAGERF_GNN
 from src.models.losses import WeightedBCELoss, FocalLoss, AuxiliaryLoss
 
 set_seed(42)
@@ -102,8 +101,24 @@ def create_model(model_name, input_dim, config):
     elif model_name == "gat":
         cfg = config.get("baselines", {}).get("gat", {})
         return GAT(input_dim, hidden_dim=cfg.get("hidden_dim", 128), num_layers=cfg.get("num_layers", 3), num_heads=cfg.get("num_heads", 8), dropout=cfg.get("dropout", 0.3))
-    elif model_name == "cage_rf_gnn":
+    elif model_name.startswith("cage_rf_gnn"):
+        import importlib
+        try:
+            module = importlib.import_module(f"src.models.{model_name}")
+            CAGERF_GNN = module.CAGERF_GNN
+        except ImportError:
+            raise ValueError(f"Cannot load model: {model_name}")
+
         cfg = config.get("cage_rf", {})
+        extra_kwargs = {}
+
+        if model_name in ["cage_rf_gnn_gat"]:
+            extra_kwargs["heads"] = cfg.get("heads", 8)
+        elif model_name in ["cage_rf_gnn_cheb", "cage_rf_gnn_tag"]:
+            extra_kwargs["K"] = cfg.get("K", 3)
+        elif model_name in ["cage_rf_gnn_sg"]:
+            extra_kwargs["K"] = cfg.get("K", 2)
+
         return CAGERF_GNN(
             input_dim,
             hidden_dim=cfg.get("hidden_dim", 128),
@@ -111,7 +126,8 @@ def create_model(model_name, input_dim, config):
             dropout=cfg.get("dropout", 0.3),
             use_gating=cfg.get("use_gating", True),
             use_ensemble=cfg.get("use_ensemble", False),
-            selected_relations=cfg.get("selected_relations", None)
+            selected_relations=cfg.get("selected_relations", None),
+            **extra_kwargs
         )
     else:
         raise ValueError(f"Unknown model: {model_name}")
@@ -379,9 +395,25 @@ def train(model_name, config_path):
     print("\n[Test Set]")
     print_metrics(test_metrics_thresholded, "Test Metrics (with best threshold)")
 
-    os.makedirs("outputs", exist_ok=True)
+    # 폴더 구조 결정
+    if model_name.startswith("cage_rf_gnn_"):
+        # GNN 벤치마크: outputs/benchmark/{MODEL_TYPE}/
+        gnn_type = model_name.split("_")[-1].upper()  # cage_rf_gnn_gat → GAT
+        output_dir = os.path.join("outputs", "benchmark", gnn_type)
+        version_suffix = config.get("version", "v7_ensemble")
+        version = f"cage_rf_gnn_{gnn_type.lower()}_{version_suffix}"
+    elif model_name == "cage_rf_gnn":
+        # 기본 CAGE-RF: outputs/cage_rf_gnn/
+        output_dir = os.path.join("outputs", "cage_rf_gnn")
+        version = config.get("version", "v2")
+    else:
+        # Baseline 모델들: outputs/cage_rf_gnn/
+        output_dir = os.path.join("outputs", "cage_rf_gnn")
+        version = model_name
 
-    model_path = os.path.join("outputs", f"best_model_{model_name}.pt")
+    os.makedirs(output_dir, exist_ok=True)
+
+    model_path = os.path.join(output_dir, f"best_model_{model_name}.pt")
     torch.save(best_model_state, model_path)
     print(f"\n[Save] {model_path}")
 
@@ -392,16 +424,11 @@ def train(model_name, config_path):
         "test_metrics": test_metrics_thresholded,
     }
 
-    if model_name == "cage_rf_gnn":
-        version = config.get("version", "v2")
-    else:
-        version = model_name
-
-    metrics_path = os.path.join("outputs", f"metrics_{version}.json")
+    metrics_path = os.path.join(output_dir, f"metrics_{version}.json")
     save_json(metrics_dict, metrics_path)
     print(f"[Save] {metrics_path}")
 
-    report_path = os.path.join("outputs", f"report_{version}.html")
+    report_path = os.path.join(output_dir, f"report_{version}.html")
     create_html_report(model_name, metrics_dict, report_path)
     print(f"[Save] {report_path}")
 
@@ -411,7 +438,13 @@ def train(model_name, config_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="cage_rf_gnn",
-                        choices=["mlp", "gcn", "graphsage", "gat", "cage_rf_gnn"])
+                        choices=[
+                            "mlp", "gcn", "graphsage", "gat",
+                            "cage_rf_gnn",
+                            "cage_rf_gnn_sage", "cage_rf_gnn_gat", "cage_rf_gnn_gcn",
+                            "cage_rf_gnn_graphconv", "cage_rf_gnn_cheb", "cage_rf_gnn_tag",
+                            "cage_rf_gnn_sg"
+                        ])
     parser.add_argument("--config", type=str, default="configs/default.yaml")
     args = parser.parse_args()
 

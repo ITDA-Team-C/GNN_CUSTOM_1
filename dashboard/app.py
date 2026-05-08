@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="GNN Fraud Detection Dashboard", layout="wide")
 
 st.title("🔍 조직적 어뷰징 네트워크 탐지 대시보드")
-st.markdown("### CAGE-RF GNN vs Baselines 성능 비교")
+st.markdown("### CAGE-RF GNN vs Baselines vs GNN Layer Benchmark 성능 비교")
 st.markdown("---")
 
 processed_dir = "data/processed"
@@ -21,25 +21,71 @@ def load_data():
     return nodes_df, features
 
 @st.cache_data
+def validate_labels():
+    """라벨 검증"""
+    try:
+        nodes_df = pd.read_csv(os.path.join(processed_dir, "node_samples.csv"))
+        validation = {
+            "total_samples": len(nodes_df),
+            "unique_labels": sorted(nodes_df['label'].unique()),
+            "nan_count": nodes_df['label'].isna().sum(),
+            "fraud_count": (nodes_df['label'] == 1).sum(),
+            "normal_count": (nodes_df['label'] == 0).sum(),
+            "fraud_ratio": (nodes_df['label'] == 1).sum() / len(nodes_df) * 100,
+            "train_fraud_ratio": (nodes_df[nodes_df['split'] == 'train']['label'] == 1).sum() / len(nodes_df[nodes_df['split'] == 'train']) * 100,
+            "valid_fraud_ratio": (nodes_df[nodes_df['split'] == 'valid']['label'] == 1).sum() / len(nodes_df[nodes_df['split'] == 'valid']) * 100,
+            "test_fraud_ratio": (nodes_df[nodes_df['split'] == 'test']['label'] == 1).sum() / len(nodes_df[nodes_df['split'] == 'test']) * 100,
+        }
+        return validation
+    except:
+        return None
+
+@st.cache_data
 def load_all_metrics():
-    """모든 모델의 metrics 로드"""
+    """모든 모델의 metrics 로드 (v2~v7 + Baselines)"""
     metrics_data = {}
 
+    # outputs/cage_rf_gnn/ 경로의 모델들
     models = [
-        ("CAGE-RF v2", "metrics_v2.json"),
-        ("CAGE-RF v3", "metrics_v3_ablation.json"),
-        ("CAGE-RF v4", "metrics_v4_threshold_pr.json"),
-        ("CAGE-RF v5", "metrics_v5_oversampling.json"),
-        ("CAGE-RF v6", "metrics_v6_hard_mining.json"),
-        ("CAGE-RF v7", "metrics_v7_ensemble.json"),
-        ("MLP", "metrics_mlp.json"),
-        ("GCN", "metrics_gcn.json"),
-        ("GraphSAGE", "metrics_graphsage.json"),
-        ("GAT", "metrics_gat.json"),
+        ("CAGE-RF v2", os.path.join(output_dir, "cage_rf_gnn", "metrics_v2.json")),
+        ("CAGE-RF v3", os.path.join(output_dir, "cage_rf_gnn", "metrics_v3_ablation.json")),
+        ("CAGE-RF v4", os.path.join(output_dir, "cage_rf_gnn", "metrics_v4_threshold_pr.json")),
+        ("CAGE-RF v5", os.path.join(output_dir, "cage_rf_gnn", "metrics_v5_oversampling.json")),
+        ("CAGE-RF v6", os.path.join(output_dir, "cage_rf_gnn", "metrics_v6_hard_mining.json")),
+        ("CAGE-RF v7", os.path.join(output_dir, "cage_rf_gnn", "metrics_v7_ensemble.json")),
+        ("MLP", os.path.join(output_dir, "cage_rf_gnn", "metrics_mlp.json")),
+        ("GCN", os.path.join(output_dir, "cage_rf_gnn", "metrics_gcn.json")),
+        ("GraphSAGE", os.path.join(output_dir, "cage_rf_gnn", "metrics_graphsage.json")),
+        ("GAT", os.path.join(output_dir, "cage_rf_gnn", "metrics_gat.json")),
     ]
 
-    for model_name, file_name in models:
-        file_path = os.path.join(output_dir, file_name)
+    for model_name, file_path in models:
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    metrics_data[model_name] = data.get("test_metrics", {})
+            except:
+                pass
+
+    return metrics_data
+
+@st.cache_data
+def load_gnn_benchmark_metrics():
+    """GNN 벤치마크 metrics 로드 (outputs/benchmark/{TYPE}/)"""
+    metrics_data = {}
+
+    gnn_models = [
+        ("CAGE-RF SAGE v7", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v7_ensemble.json")),
+        ("CAGE-RF GAT v7", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v7_ensemble.json")),
+        ("CAGE-RF GCN v7", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v7_ensemble.json")),
+        ("CAGE-RF GraphConv v7", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v7_ensemble.json")),
+        ("CAGE-RF Cheb v7", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v7_ensemble.json")),
+        ("CAGE-RF TAG v7", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v7_ensemble.json")),
+        ("CAGE-RF SG v7", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v7_ensemble.json")),
+    ]
+
+    for model_name, file_path in gnn_models:
         if os.path.exists(file_path):
             try:
                 with open(file_path, 'r') as f:
@@ -52,15 +98,22 @@ def load_all_metrics():
 
 nodes_df, features = load_data()
 all_metrics = load_all_metrics()
+gnn_benchmark_metrics = load_gnn_benchmark_metrics()
+label_validation = validate_labels()
+
+# 모든 모델 통합 (기본 + 벤치마크)
+combined_metrics = {**all_metrics, **gnn_benchmark_metrics}
 
 # 모델 선택
 models_list = list(all_metrics.keys()) if all_metrics else []
 selected_model = st.selectbox("📊 분석할 모델 선택", models_list, index=2 if len(models_list) > 2 else 0) if models_list else None
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 전체 성능 비교",
     "⭐ 모델별 상세 결과",
     "📈 성능 순위",
+    "🚀 GNN Layer 벤치마크",
+    "✅ 라벨 검증",
     "📋 데이터 개요"
 ])
 
@@ -175,8 +228,153 @@ with tab3:
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-# Tab 4: 데이터 개요
+# Tab 4: GNN Layer 벤치마크
 with tab4:
+    st.header("🚀 GNN Layer 벤치마크 결과 (v7 Ensemble)")
+
+    if gnn_benchmark_metrics:
+        st.info("💡 다양한 GNN layer들의 성능을 v7 Ensemble 설정에서 비교합니다.")
+
+        # 벤치마크 성능 테이블
+        gnn_df = pd.DataFrame(gnn_benchmark_metrics).T
+        gnn_df = gnn_df.sort_values("pr_auc", ascending=False)
+
+        st.subheader("📊 성능 비교 테이블")
+        st.dataframe(
+            gnn_df.style.format("{:.4f}").highlight_max(axis=0, color='#90EE90'),
+            use_container_width=True
+        )
+
+        st.markdown("---")
+
+        # 모델별 특성 설명
+        st.subheader("📚 GNN Layer 특성")
+        gnn_info = {
+            "SAGE": "샘플링 기반의 그래프 신경망. 빠르고 가볍으며 확장성이 우수함",
+            "GAT": "어텐션 메커니즘을 사용하여 중요한 이웃에 가중치를 부여",
+            "GCN": "고전적인 그래프 합성곱. 안정적이고 이해하기 쉬움",
+            "GraphConv": "일반적인 그래프 합성곱. 유연한 구조",
+            "Cheb": "Chebyshev 다항식을 사용. 높은 차수의 이웃 정보 활용",
+            "TAG": "위상 정보에 적응적인 구조",
+            "SG": "GCN을 단순화한 버전. 계산 효율성이 높음"
+        }
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Best Model**: " + gnn_df.index[0])
+            st.metric("PR-AUC", f"{gnn_df.iloc[0]['pr_auc']:.4f}")
+            st.metric("Macro-F1", f"{gnn_df.iloc[0]['macro_f1']:.4f}")
+
+        with col2:
+            selected_gnn = st.selectbox("GNN Layer 선택", gnn_benchmark_metrics.keys())
+            if selected_gnn:
+                gnn_metrics = gnn_benchmark_metrics[selected_gnn]
+                st.markdown(f"**{selected_gnn}**")
+                st.markdown(gnn_info.get(selected_gnn.split()[-2], ""))
+                st.metric("PR-AUC", f"{gnn_metrics.get('pr_auc', 0):.4f}")
+                st.metric("Macro-F1", f"{gnn_metrics.get('macro_f1', 0):.4f}")
+
+        st.markdown("---")
+
+        # PR-AUC 비교 차트
+        st.subheader("📊 PR-AUC 비교")
+        fig_gnn_bar = go.Figure(
+            data=[go.Bar(
+                x=gnn_df.index,
+                y=gnn_df['pr_auc'],
+                marker=dict(
+                    color=['#FF6B6B' if i == 0 else '#4ECDC4' for i in range(len(gnn_df))]
+                ),
+                text=gnn_df['pr_auc'].round(4),
+                textposition="outside"
+            )]
+        )
+        fig_gnn_bar.update_layout(
+            title="GNN Layer별 PR-AUC 비교",
+            xaxis_title="GNN Layer",
+            yaxis_title="PR-AUC",
+            height=400
+        )
+        st.plotly_chart(fig_gnn_bar, use_container_width=True)
+    else:
+        st.warning("⚠️ GNN 벤치마크 결과가 없습니다. 다음 명령어로 학습하세요:\npython run_all_gnn_benchmarks.py")
+
+# Tab 5: 라벨 검증
+with tab5:
+    st.header("✅ 라벨 검증 상태")
+
+    if label_validation:
+        validation = label_validation
+
+        # 검증 상태 표시
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("총 샘플 수", f"{validation['total_samples']:,}")
+        with col2:
+            st.metric("고유 라벨 값", str(validation['unique_labels']))
+        with col3:
+            st.metric("NaN 개수", validation['nan_count'])
+        with col4:
+            status = "✅ PASS" if validation['unique_labels'] == [0, 1] and validation['nan_count'] == 0 else "❌ FAIL"
+            st.metric("검증 상태", status)
+
+        st.markdown("---")
+
+        # 라벨 분포
+        st.subheader("📊 라벨 분포")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("사기 (Fraud)", f"{validation['fraud_count']:,} ({validation['fraud_ratio']:.2f}%)")
+        with col2:
+            st.metric("정상 (Normal)", f"{validation['normal_count']:,} ({100-validation['fraud_ratio']:.2f}%)")
+        with col3:
+            imbalance_ratio = validation['normal_count'] / validation['fraud_count'] if validation['fraud_count'] > 0 else 0
+            st.metric("불균형 비율", f"{imbalance_ratio:.2f}:1")
+
+        st.markdown("---")
+
+        # Stratification 검증
+        st.subheader("✅ Stratification 검증 (각 Split별 라벨 비율)")
+        stratification_data = {
+            "Split": ["Train", "Valid", "Test"],
+            "Fraud Ratio (%)": [
+                validation['train_fraud_ratio'],
+                validation['valid_fraud_ratio'],
+                validation['test_fraud_ratio']
+            ]
+        }
+        strat_df = pd.DataFrame(stratification_data)
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Train", f"{stratification_data['Fraud Ratio (%)'][0]:.2f}%")
+        with col2:
+            st.metric("Valid", f"{stratification_data['Fraud Ratio (%)'][1]:.2f}%")
+        with col3:
+            st.metric("Test", f"{stratification_data['Fraud Ratio (%)'][2]:.2f}%")
+
+        # Stratification 시각화
+        fig_strat = go.Figure(data=[
+            go.Bar(
+                x=stratification_data["Split"],
+                y=stratification_data["Fraud Ratio (%)"],
+                marker=dict(color='#4ECDC4')
+            )
+        ])
+        fig_strat.update_layout(
+            title="각 Split별 Fraud 비율 (일치하면 Good!)",
+            xaxis_title="Split",
+            yaxis_title="Fraud Ratio (%)",
+            height=400
+        )
+        st.plotly_chart(fig_strat, use_container_width=True)
+
+        st.success("✅ 모든 라벨 검증 통과! 데이터 품질이 안정적입니다.")
+    else:
+        st.warning("⚠️ 라벨 검증 정보를 로드할 수 없습니다.")
+
+# Tab 6: 데이터 개요
+with tab6:
     st.header("📋 데이터 개요")
 
     col1, col2, col3 = st.columns(3)
@@ -211,5 +409,6 @@ with tab4:
         st.plotly_chart(fig_label, use_container_width=True)
 
 st.markdown("---")
-st.markdown("**Legend**: 🔴 CAGE-RF v4 (최고 성능) | 🟦 CAGE-RF v2~v7 | 🟩 Baselines")
-st.markdown("**Generated**: 2026-05-07 | **Team**: ITDA Team C")
+st.markdown("**Legend**: 🔴 CAGE-RF v4 (기존 최고) | 🟦 CAGE-RF v2~v7 | 🟩 Baselines | 🚀 GNN Benchmark (v7)")
+st.markdown("**Generated**: 2026-05-08 | **Team**: ITDA Team C")
+st.markdown("**Folder Structure**: `outputs/cage_rf_gnn/` (메인) | `outputs/benchmark/{TYPE}/` (벤치마크)")
