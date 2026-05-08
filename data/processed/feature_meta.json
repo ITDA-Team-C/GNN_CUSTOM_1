@@ -1,6 +1,0 @@
-{
-  "num_nodes": 50000,
-  "num_features": 140,
-  "text_embedding_dim": 128,
-  "numeric_features_dim": 12
-}
