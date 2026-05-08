@@ -106,6 +106,34 @@ def load_metrics(model_name, file_path):
         return None
 
 
+def save_results(df, output_dir):
+    """Save results to CSV and TXT files"""
+    timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+
+    # CSV 저장
+    csv_path = output_dir / f"comparison_results_{timestamp}.csv"
+    df.to_csv(csv_path)
+    print(f"✅ Results saved to CSV: {csv_path}")
+
+    # TXT 저장
+    txt_path = output_dir / f"comparison_results_{timestamp}.txt"
+    with open(txt_path, 'w', encoding='utf-8') as f:
+        f.write("=" * 130 + "\n")
+        f.write("🏆 Model Performance Comparison (Test Set)\n")
+        f.write("=" * 130 + "\n\n")
+        f.write(df.to_string())
+        f.write("\n\n" + "=" * 130 + "\n")
+        f.write("Top 3 Models by PR-AUC:\n")
+        f.write("=" * 130 + "\n")
+        if "pr_auc" in df.columns:
+            top3 = df.nlargest(3, "pr_auc")
+            for rank, (model_name, row) in enumerate(top3.iterrows(), 1):
+                pr_auc = row.get("pr_auc", "N/A")
+                macro_f1 = row.get("macro_f1", "N/A")
+                f.write(f"{rank}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}\n")
+    print(f"✅ Results saved to TXT: {txt_path}")
+
+
 def main():
     output_dir = Path("outputs")
 
@@ -213,6 +241,9 @@ def main():
             print(f"{rank}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}")
 
     print("=" * 130 + "\n")
+
+    # Save results to CSV and TXT
+    save_results(df, output_dir)
 
 
 if __name__ == "__main__":

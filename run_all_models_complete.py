@@ -58,8 +58,7 @@ GNN_VERSIONS = [
 
 for name, base_model, desc in GNN_LAYERS:
     for version, config in GNN_VERSIONS:
-        model_name = f"{base_model}_{version}"
-        GNN_BENCHMARKS.append((f"{name}", model_name, f"{desc} {version}", config))
+        GNN_BENCHMARKS.append((f"{name}", base_model, f"{desc} {version}", config))
 
 def run_training(cmd, model_name, timeout=3600):
     """학습 실행 헬퍼 함수"""
