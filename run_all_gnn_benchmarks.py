@@ -46,6 +46,7 @@ results = []
 for i, (name, model, desc) in enumerate(models, 1):
     print(f"\n[{i}/7] {name.upper()} - {desc}")
     print("-" * 80)
+    print(f"⏱️  Starting at {time.strftime('%H:%M:%S')}")
 
     cmd = [
         sys.executable, "-m", "src.training.train",
@@ -56,15 +57,29 @@ for i, (name, model, desc) in enumerate(models, 1):
     ]
 
     version_start = time.time()
-    result = subprocess.run(cmd)
-    version_time = time.time() - version_start
+    try:
+        result = subprocess.run(cmd, timeout=3600)  # 1시간 타임아웃
+        version_time = time.time() - version_start
 
-    if result.returncode != 0:
-        print(f"❌ {name} training failed with code {result.returncode}")
-        results.append((name, "FAILED", version_time))
-    else:
-        print(f"✅ {name} training completed in {version_time:.1f}s")
-        results.append((name, "SUCCESS", version_time))
+        if result.returncode != 0:
+            print(f"❌ {name} training failed with code {result.returncode}")
+            results.append((name, "FAILED", version_time))
+        else:
+            print(f"✅ {name} training completed in {version_time:.1f}s")
+            results.append((name, "SUCCESS", version_time))
+    except subprocess.TimeoutExpired:
+        version_time = time.time() - version_start
+        print(f"⏱️  {name} training timeout after {version_time:.1f}s")
+        results.append((name, "TIMEOUT", version_time))
+    except KeyboardInterrupt:
+        version_time = time.time() - version_start
+        print(f"⛔ {name} training interrupted after {version_time:.1f}s")
+        results.append((name, "INTERRUPTED", version_time))
+        break
+    except Exception as e:
+        version_time = time.time() - version_start
+        print(f"❌ {name} training error: {e}")
+        results.append((name, "ERROR", version_time))
 
 print("\n" + "=" * 80)
 print("📊 GNN LAYER BENCHMARK SUMMARY")
