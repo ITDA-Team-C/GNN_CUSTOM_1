@@ -7,6 +7,10 @@ import torch
 import torch.optim as optim
 from pathlib import Path
 
+# UTF-8 인코딩 설정 (Windows 호환성)
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.utils import set_seed, load_config, save_object, save_json
