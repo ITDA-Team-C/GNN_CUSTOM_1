@@ -42,7 +42,7 @@ def validate_labels():
 
 @st.cache_data
 def load_all_metrics():
-    """모든 모델의 metrics 로드 (v2~v7 + Baselines)"""
+    """모든 모델의 metrics 로드 (v2~v9 + Baselines)"""
     metrics_data = {}
 
     # outputs/cage_rf_gnn/ 경로의 모델들
@@ -53,6 +53,8 @@ def load_all_metrics():
         ("CAGE-RF v5", os.path.join(output_dir, "cage_rf_gnn", "metrics_v5_oversampling.json")),
         ("CAGE-RF v6", os.path.join(output_dir, "cage_rf_gnn", "metrics_v6_hard_mining.json")),
         ("CAGE-RF v7", os.path.join(output_dir, "cage_rf_gnn", "metrics_v7_ensemble.json")),
+        ("CAGE-RF v8", os.path.join(output_dir, "cage_rf_gnn", "metrics_v8_skip.json")),
+        ("CAGE-RF v9", os.path.join(output_dir, "cage_rf_gnn", "metrics_v9_twostage.json")),
         ("MLP", os.path.join(output_dir, "cage_rf_gnn", "metrics_mlp.json")),
         ("GCN", os.path.join(output_dir, "cage_rf_gnn", "metrics_gcn.json")),
         ("GraphSAGE", os.path.join(output_dir, "cage_rf_gnn", "metrics_graphsage.json")),
@@ -72,27 +74,33 @@ def load_all_metrics():
 
 @st.cache_data
 def load_gnn_benchmark_metrics():
-    """GNN 벤치마크 metrics 로드 (outputs/benchmark/{TYPE}/)"""
+    """GNN 벤치마크 metrics 로드 (outputs/benchmark/{TYPE}/ v2~v9)"""
     metrics_data = {}
 
-    gnn_models = [
-        ("CAGE-RF SAGE v7", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v7_ensemble.json")),
-        ("CAGE-RF GAT v7", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v7_ensemble.json")),
-        ("CAGE-RF GCN v7", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v7_ensemble.json")),
-        ("CAGE-RF GraphConv v7", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v7_ensemble.json")),
-        ("CAGE-RF Cheb v7", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v7_ensemble.json")),
-        ("CAGE-RF TAG v7", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v7_ensemble.json")),
-        ("CAGE-RF SG v7", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v7_ensemble.json")),
+    gnn_layers = ["SAGE", "GAT", "GCN", "GRAPHCONV", "CHEB", "TAG", "SG"]
+    versions = [
+        ("v2", "default"),
+        ("v3", "v3_ablation"),
+        ("v4", "v4_threshold_pr"),
+        ("v5", "v5_oversampling"),
+        ("v6", "v6_hard_mining"),
+        ("v7", "v7_ensemble"),
+        ("v8", "v8_skip"),
+        ("v9", "v9_twostage"),
     ]
 
-    for model_name, file_path in gnn_models:
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r') as f:
-                    data = json.load(f)
-                    metrics_data[model_name] = data.get("test_metrics", {})
-            except:
-                pass
+    for gnn_type in gnn_layers:
+        for version, config_name in versions:
+            model_name = f"CAGE-RF {gnn_type} {version}"
+            file_path = os.path.join(output_dir, "benchmark", gnn_type, f"metrics_cage_rf_gnn_{gnn_type.lower()}_{config_name}.json")
+
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                        metrics_data[model_name] = data.get("test_metrics", {})
+                except:
+                    pass
 
     return metrics_data
 
@@ -195,45 +203,115 @@ with tab2:
 with tab3:
     st.header("🏅 모델 성능 순위")
 
-    if all_metrics:
-        ranking_df = pd.DataFrame(all_metrics).T.sort_values("pr_auc", ascending=False)
-        ranking_df['순위'] = range(1, len(ranking_df) + 1)
-        ranking_df = ranking_df[['순위', 'pr_auc', 'macro_f1', 'roc_auc', 'accuracy']]
+    if combined_metrics:
+        # 전체 데이터프레임 (v2~v9 + GNN Benchmark)
+        all_ranking_df = pd.DataFrame(combined_metrics).T.sort_values("pr_auc", ascending=False)
 
-        st.markdown("### PR-AUC 기준 순위")
+        # v9 포함 Top 10
+        st.markdown("### 🚀 Top 10 Models (v2~v9 All Versions)")
+        st.info("💡 V9 (Two-Stage GNN)까지 모든 버전을 포함한 최고 성능 모델 Top 10")
+
+        top10_all = all_ranking_df.head(10).copy()
+        top10_all['순위'] = range(1, 11)
+        top10_all = top10_all[['순위', 'pr_auc', 'macro_f1', 'roc_auc', 'accuracy']]
+
         st.dataframe(
-            ranking_df.style.format("{:.4f}", subset=['pr_auc', 'macro_f1', 'roc_auc', 'accuracy']),
+            top10_all.style.format("{:.4f}", subset=['pr_auc', 'macro_f1', 'roc_auc', 'accuracy']),
             use_container_width=True
         )
 
         st.markdown("---")
 
-        # 막대 그래프
-        st.markdown("### PR-AUC 비교 (전체 모델)")
+        # v9 제외 Top 10 (v2~v8)
+        st.markdown("### 📊 Top 10 Models (v2~v8: Without V9)")
+        st.info("💡 V8 (Skip Connection)까지만 포함. 더 빠른 학습과 안정적인 성능이 필요한 경우 추천")
+
+        v2_v8_metrics = {k: v for k, v in combined_metrics.items() if 'v9' not in k}
+        top10_v2v8_df = pd.DataFrame(v2_v8_metrics).T.sort_values("pr_auc", ascending=False)
+        top10_v2v8 = top10_v2v8_df.head(10).copy()
+        top10_v2v8['순위'] = range(1, 11)
+        top10_v2v8 = top10_v2v8[['순위', 'pr_auc', 'macro_f1', 'roc_auc', 'accuracy']]
+
+        st.dataframe(
+            top10_v2v8.style.format("{:.4f}", subset=['pr_auc', 'macro_f1', 'roc_auc', 'accuracy']),
+            use_container_width=True
+        )
+
+        st.markdown("---")
+
+        # 비교 시각화
+        st.markdown("### 📈 Top 10 Performance Comparison")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            fig_bar_all = go.Figure(
+                data=[go.Bar(
+                    x=top10_all.index,
+                    y=top10_all['pr_auc'],
+                    marker=dict(color='#FF6B6B'),
+                    text=top10_all['pr_auc'].round(4),
+                    textposition="outside"
+                )]
+            )
+            fig_bar_all.update_layout(
+                title="Top 10 PR-AUC (With V9)",
+                xaxis_title="모델",
+                yaxis_title="PR-AUC",
+                height=400,
+                showlegend=False
+            )
+            st.plotly_chart(fig_bar_all, use_container_width=True)
+
+        with col2:
+            fig_bar_v2v8 = go.Figure(
+                data=[go.Bar(
+                    x=top10_v2v8.index,
+                    y=top10_v2v8['pr_auc'],
+                    marker=dict(color='#4ECDC4'),
+                    text=top10_v2v8['pr_auc'].round(4),
+                    textposition="outside"
+                )]
+            )
+            fig_bar_v2v8.update_layout(
+                title="Top 10 PR-AUC (Without V9)",
+                xaxis_title="모델",
+                yaxis_title="PR-AUC",
+                height=400,
+                showlegend=False
+            )
+            st.plotly_chart(fig_bar_v2v8, use_container_width=True)
+
+        st.markdown("---")
+
+        # 막대 그래프 (전체)
+        st.markdown("### 📊 전체 모델 PR-AUC 비교")
+        ranking_df = all_ranking_df.copy()
+        ranking_df['순위'] = range(1, len(ranking_df) + 1)
+
         fig_bar = go.Figure(
             data=[go.Bar(
                 x=ranking_df.index,
                 y=ranking_df['pr_auc'],
                 marker=dict(
-                    color=['#FF6B6B' if 'v4' in x else '#4ECDC4' if 'CAGE' in x else '#95E1D3'
+                    color=['#FF6B6B' if 'v9' in x else '#FFA500' if 'v8' in x else '#4ECDC4' if 'v4' in x else '#95E1D3'
                            for x in ranking_df.index]
                 )
             )]
         )
         fig_bar.update_layout(
-            title="모든 모델의 PR-AUC",
+            title="모든 모델의 PR-AUC (V9는 빨강, V8은 주황색)",
             xaxis_title="모델",
             yaxis_title="PR-AUC",
-            height=400
+            height=500
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
 # Tab 4: GNN Layer 벤치마크
 with tab4:
-    st.header("🚀 GNN Layer 벤치마크 결과 (v7 Ensemble)")
+    st.header("🚀 GNN Layer 벤치마크 결과 (v2~v9 All Versions)")
 
     if gnn_benchmark_metrics:
-        st.info("💡 다양한 GNN layer들의 성능을 v7 Ensemble 설정에서 비교합니다.")
+        st.info("💡 다양한 GNN layer들의 성능을 v2~v9 모든 버전에서 비교합니다. V8(Skip Connection), V9(Two-Stage)의 효과를 확인할 수 있습니다.")
 
         # 벤치마크 성능 테이블
         gnn_df = pd.DataFrame(gnn_benchmark_metrics).T
@@ -409,6 +487,6 @@ with tab6:
         st.plotly_chart(fig_label, use_container_width=True)
 
 st.markdown("---")
-st.markdown("**Legend**: 🔴 CAGE-RF v4 (기존 최고) | 🟦 CAGE-RF v2~v7 | 🟩 Baselines | 🚀 GNN Benchmark (v7)")
-st.markdown("**Generated**: 2026-05-08 | **Team**: ITDA Team C")
-st.markdown("**Folder Structure**: `outputs/cage_rf_gnn/` (메인) | `outputs/benchmark/{TYPE}/` (벤치마크)")
+st.markdown("**Legend**: 🔴 CAGE-RF v9 (최신) | 🟠 CAGE-RF v8 (Skip Connection) | 🟦 CAGE-RF v2~v7 | 🟩 Baselines | 🚀 GNN Benchmark (v2~v9)")
+st.markdown("**Generated**: 2026-05-09 | **Team**: ITDA Team C | **Models**: 60 (4 Baselines + 56 GNN v2~v9)")
+st.markdown("**Folder Structure**: `outputs/cage_rf_gnn/` (메인 v2~v9) | `outputs/benchmark/{TYPE}/` (7 GNN × 8 versions)")
