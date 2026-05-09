@@ -145,66 +145,73 @@ tabs = st.tabs([
 ])
 
 # ============================================================================
-# Tab 1: 벤치마크 성능 비교
+# Tab 1: 순수 GNN Layers (v2 Default)
 # ============================================================================
 with tabs[0]:
-    st.header("🚀 GNN Layer 벤치마크 성능 비교")
-    st.markdown("7개 GNN Layer(SAGE, GAT, GCN, GraphConv, CHEB, TAG, SG)의 v2~v9 전체 성능")
+    st.header("🔬 순수 GNN Layers 성능 (v2 Default - 기본 설정)")
+    st.markdown("각 GNN Layer를 기본 설정(v2)으로만 학습한 7개 모델 성능")
 
     if gnn_benchmark_metrics:
-        benchmark_df = pd.DataFrame(gnn_benchmark_metrics).T.sort_values("pr_auc", ascending=False)
+        # v2(기본) 버전만 필터링
+        pure_gnn = {k: v for k, v in gnn_benchmark_metrics.items() if 'v2' in k}
+        pure_df = pd.DataFrame(pure_gnn).T.sort_values("pr_auc", ascending=False)
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("총 벤치마크 모델", len(benchmark_df))
+            st.metric("총 순수 GNN 모델", len(pure_df))
         with col2:
-            st.metric("최고 PR-AUC", f"{benchmark_df['pr_auc'].max():.4f}")
+            st.metric("최고 PR-AUC", f"{pure_df['pr_auc'].max():.4f}")
         with col3:
-            st.metric("최고 Macro-F1", f"{benchmark_df['macro_f1'].max():.4f}")
+            st.metric("최고 Macro-F1", f"{pure_df['macro_f1'].max():.4f}")
         with col4:
-            st.metric("평균 PR-AUC", f"{benchmark_df['pr_auc'].mean():.4f}")
+            st.metric("평균 PR-AUC", f"{pure_df['pr_auc'].mean():.4f}")
 
         st.markdown("---")
-        st.subheader("📊 벤치마크 전체 성능 테이블")
+        st.subheader("📊 순수 GNN Layer 성능 테이블 (v2 Default)")
         st.dataframe(
-            benchmark_df.style.format("{:.4f}").highlight_max(axis=0, color='#90EE90'),
+            pure_df[['pr_auc', 'macro_f1', 'roc_auc', 'accuracy', 'precision', 'recall']].style.format("{:.4f}").highlight_max(axis=0, color='#90EE90'),
             use_container_width=True
         )
 
         st.markdown("---")
-        st.subheader("📈 PR-AUC Top 15")
-        top15 = benchmark_df.head(15)[['pr_auc', 'macro_f1', 'roc_auc']]
+        st.subheader("📈 GNN Layer별 성능 비교")
 
         fig = go.Figure(
             data=[go.Bar(
-                y=top15.index,
-                x=top15['pr_auc'],
-                orientation='h',
-                marker=dict(color=top15['pr_auc'], colorscale='Viridis'),
-                text=top15['pr_auc'].round(4),
+                x=[x.split()[-2] for x in pure_df.index],  # Extract layer name (SAGE, GAT, etc)
+                y=pure_df['pr_auc'],
+                marker=dict(color=pure_df['pr_auc'], colorscale='Viridis'),
+                text=pure_df['pr_auc'].round(4),
                 textposition='outside'
             )]
         )
-        fig.update_layout(height=500, xaxis_title="PR-AUC", yaxis_title="Model")
+        fig.update_layout(height=400, xaxis_title="GNN Layer", yaxis_title="PR-AUC", title="GNN Layer별 PR-AUC (v2 Default)")
         st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("---")
+        st.subheader("💡 기본 설정 특성")
+        st.markdown("""
+        - **SAGE**: 샘플링 기반, 가볍고 빠름
+        - **GAT**: 어텐션 메커니즘, 해석가능성 높음
+        - **GCN**: 안정적이고 견고함
+        - **GraphConv**: 일반적인 그래프 합성곱
+        - **CHEB**: Chebyshev 다항식, 고차 정보 활용
+        - **TAG**: 위상 정보 적응
+        - **SG**: 단순화된 GCN, 효율성 최고
+        """)
 
 # ============================================================================
 # Tab 2: v2~v6 + 벤치마크
 # ============================================================================
 with tabs[1]:
-    st.header("📊 v2~v6 모델 + 벤치마크 성능")
-    st.markdown("기존 버전(v2~v6)과 GNN 벤치마크 비교")
+    st.header("📊 CAGE-RF v2~v7 + 모든 GNN Benchmark")
+    st.markdown("CAGE-RF 모델 6개 버전 × 7개 GNN Layer = 42개 모델 성능 비교")
 
-    if all_metrics and gnn_benchmark_metrics:
-        # v2~v6만 필터링
-        v2_v6_metrics = {k: v for k, v in all_metrics.items() if any(f'v{i}' in k for i in range(2, 7))}
+    if gnn_benchmark_metrics:
+        # v2~v7만 필터링 (v8, v9 제외)
+        cage_rf_v2_v7_metrics = {k: v for k, v in gnn_benchmark_metrics.items() if any(f'v{i}' in k for i in range(2, 8))}
 
-        # 벤치마크 중 v2~v6만 필터링 (v8, v9 제외)
-        gnn_v2_v6_metrics = {k: v for k, v in gnn_benchmark_metrics.items() if any(f'v{i}' in k for i in range(2, 7))}
-
-        # v2~v6 통합
-        comparison_data = {**v2_v6_metrics, **gnn_v2_v6_metrics}
-        comparison_df = pd.DataFrame(comparison_data).T.sort_values("pr_auc", ascending=False)
+        comparison_df = pd.DataFrame(cage_rf_v2_v7_metrics).T.sort_values("pr_auc", ascending=False)
 
         col1, col2, col3 = st.columns(3)
         with col1:
