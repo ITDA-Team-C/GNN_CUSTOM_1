@@ -1,0 +1,20 @@
+{
+  "model": "cage_rf_gnn_graphconv",
+  "best_threshold": 0.26,
+  "valid_metrics": {
+    "pr_auc": 0.31786653808464604,
+    "roc_auc": 0.7800297810395694,
+    "macro_f1": 0.6075090111833911,
+    "precision": 0.6456372145670785,
+    "recall": 0.5904296449188495,
+    "accuracy": 0.870375
+  },
+  "test_metrics": {
+    "pr_auc": 0.29752798715654877,
+    "roc_auc": 0.7767871668745483,
+    "macro_f1": 0.6229425955444919,
+    "precision": 0.6091740881646744,
+    "recall": 0.6509515287669317,
+    "accuracy": 0.817
+  }
+}

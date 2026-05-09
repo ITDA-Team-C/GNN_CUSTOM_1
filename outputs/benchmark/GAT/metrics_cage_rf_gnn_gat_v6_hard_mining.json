@@ -1,0 +1,20 @@
+{
+  "model": "cage_rf_gnn_gat",
+  "best_threshold": 0.45,
+  "valid_metrics": {
+    "pr_auc": 0.23826409720197356,
+    "roc_auc": 0.7456323560927918,
+    "macro_f1": 0.46970701312475144,
+    "precision": 0.442875,
+    "recall": 0.5,
+    "accuracy": 0.88575
+  },
+  "test_metrics": {
+    "pr_auc": 0.24332823655174834,
+    "roc_auc": 0.7468789360571207,
+    "macro_f1": 0.5911504597820121,
+    "precision": 0.581300441795932,
+    "recall": 0.61599719307978,
+    "accuracy": 0.7976
+  }
+}

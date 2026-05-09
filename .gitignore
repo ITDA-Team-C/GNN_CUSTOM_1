@@ -43,10 +43,10 @@ data/raw/*.csv
 data/interim/*.csv
 data/interim/*.txt
 data/processed/*.pt
-data/processed/*.npy
-data/processed/*.json
+# data/processed/*.npy  ← 주석 처리 (대시보드에 필요)
+# data/processed/*.json ← 주석 처리 (대시보드에 필요)
 
-outputs/
+# outputs/ ← 주석 처리 (대시보드에 필요)
 results/
 logs/
 
