@@ -836,9 +836,9 @@ st.markdown("""
 **📊 Dashboard 정보**
 - **생성일**: 2026-05-09
 - **팀**: ITDA Team C
-- **모델 수**: 60개 (4 Baselines + 56 GNN v2~v9)
+- **모델 수**: 45개 - 8개 Benchmarks(MLP + 7개 v2) + 35개 (GNN v3~v7) + 2개 (cheb v8, v9)
 - **GNN Layers**: 7개 (SAGE, GAT, GCN, GraphConv, CHEB, TAG, SG)
-- **Versions**: v2~v9 (+ Skip Connection v8, Two-Stage v9)
+- **Versions**: v2~v8 (+ Skip Connection v8, Two-Stage v9)
 
 **📁 폴더 구조**
 - `outputs/cage_rf_gnn/`: 메인 모델 v2~v9
