@@ -192,7 +192,7 @@ def main():
         ("GAT", output_dir / "cage_rf_gnn" / "metrics_gat.json"),
     ]
 
-    # GNN Layer Benchmarks (v2~v7) - outputs/benchmark/{TYPE}/
+    # GNN Layer Benchmarks (v2~v9) - outputs/benchmark/{TYPE}/
     gnn_layers = [
         ("SAGE", "GraphSAGE"),
         ("GAT", "Graph Attention Network"),
@@ -210,6 +210,8 @@ def main():
         ("v5", "v5_oversampling"),
         ("v6", "v6_hard_mining"),
         ("v7", "v7_ensemble"),
+        ("v8", "v8_skip"),
+        ("v9", "v9_twostage"),
     ]
 
     for gnn_type, gnn_desc in gnn_layers:

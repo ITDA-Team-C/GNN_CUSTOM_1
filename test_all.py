@@ -23,7 +23,10 @@ def validate_labels():
     print("🔍 LABEL VALIDATION CHECK")
     print("=" * 130)
 
-    processed_dir = Path("data/processed")
+    # scripts/evaluation에서 실행시 경로 조정
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent.parent if "scripts" in str(script_dir) else Path(".")
+    processed_dir = project_root / "data" / "processed"
     node_samples_path = processed_dir / "node_samples.csv"
 
     if not node_samples_path.exists():
@@ -162,7 +165,10 @@ def save_results(df, output_dir):
 
 
 def main():
-    output_dir = Path("outputs")
+    # scripts/evaluation에서 실행시 경로 조정
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent.parent if "scripts" in str(script_dir) else Path(".")
+    output_dir = project_root / "outputs"
 
     if not output_dir.exists():
         print("[ERROR] outputs/ directory not found")
@@ -204,6 +210,8 @@ def main():
         ("v5", "v5_oversampling"),
         ("v6", "v6_hard_mining"),
         ("v7", "v7_ensemble"),
+        ("v8", "v8_skip"),
+        ("v9", "v9_twostage"),
     ]
 
     for gnn_type, gnn_desc in gnn_layers:

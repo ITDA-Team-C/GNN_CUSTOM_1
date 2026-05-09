@@ -59,8 +59,8 @@ GNN_VERSIONS = [
     ("v5", "configs/v5_oversampling.yaml"),
     ("v6", "configs/v6_hard_mining.yaml"),
     ("v7", "configs/v7_ensemble.yaml"),
-    ("v8", "configs/v8_skip_cheb.yaml"),
-    ("v9", "configs/v9_twostage_cheb.yaml"),
+    ("v8", "configs/v8_skip.yaml"),
+    ("v9", "configs/v9_twostage.yaml"),
 ]
 
 for name, base_model, desc in GNN_LAYERS:
