@@ -89,7 +89,8 @@ def load_gnn_benchmark_metrics():
     for gnn_type in gnn_layers:
         for version, config_name in versions:
             model_name = f"CAGE-RF {gnn_type} {version}"
-            file_path = os.path.join(output_dir, "benchmark", gnn_type, f"metrics_cage_rf_gnn_{gnn_type.lower()}_{config_name}.json")
+            # 파일명에 버전 번호(v2, v3 등)가 직접 들어감
+            file_path = os.path.join(output_dir, "benchmark", gnn_type, f"metrics_cage_rf_gnn_{gnn_type.lower()}_{version}.json")
 
             if os.path.exists(file_path):
                 try:
