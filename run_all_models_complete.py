@@ -78,9 +78,8 @@ def run_training(cmd, model_name, timeout=3600):
 print("\n" + "=" * 100)
 print("🚀 COMPLETE MODEL TRAINING PIPELINE")
 print("=" * 100)
-total_models = len(CAGE_RF_VERSIONS) + len(BASELINES) + len(GNN_BENCHMARKS)
+total_models = len(BASELINES) + len(GNN_BENCHMARKS)
 print(f"Total Models: {total_models}")
-print(f"  - CAGE-RF v2~v7: {len(CAGE_RF_VERSIONS)}")
 print(f"  - Baselines: {len(BASELINES)}")
 print(f"  - GNN Benchmarks (v2~v7): {len(GNN_BENCHMARKS)} ({len(GNN_LAYERS)} GNN × 6 versions)")
 print("=" * 100)
@@ -89,47 +88,15 @@ start_time = time.time()
 all_results = []
 
 # ============================================================================
-# 1. CAGE-RF v2~v7 학습
-# ============================================================================
-print("\n[Phase 1/3] CAGE-RF v2~v7 Training")
-print("-" * 100)
-
-cage_rf_results = []
-for i, (version, config) in enumerate(CAGE_RF_VERSIONS, 1):
-    print(f"\n[1-{i}/6] CAGE-RF {version} with {config}")
-    print("⏱️  Starting at", time.strftime('%H:%M:%S'))
-
-    cmd = [
-        sys.executable, "-m", "src.training.train",
-        "--model", "cage_rf_gnn",
-        "--config", config,
-        "--skip-preprocessing",
-        "--skip-graph"
-    ]
-
-    model_start = time.time()
-    success = run_training(cmd, f"CAGE-RF {version}")
-    elapsed = time.time() - model_start
-
-    if success:
-        print(f"✅ CAGE-RF {version} completed in {elapsed:.1f}s")
-        cage_rf_results.append((f"CAGE-RF {version}", "SUCCESS", elapsed))
-        all_results.append((f"CAGE-RF {version}", "SUCCESS", elapsed))
-    else:
-        print(f"❌ CAGE-RF {version} failed")
-        cage_rf_results.append((f"CAGE-RF {version}", "FAILED", elapsed))
-        all_results.append((f"CAGE-RF {version}", "FAILED", elapsed))
-
-# ============================================================================
-# 2. Baseline 모델 학습
+# 1. Baseline 모델 학습
 # ============================================================================
 print("\n" + "=" * 100)
-print("[Phase 2/3] Baseline Models Training")
+print("[Phase 1/2] Baseline Models Training")
 print("-" * 100)
 
 baseline_results = []
 for i, (model, config) in enumerate(BASELINES, 1):
-    print(f"\n[2-{i}/4] {model.upper()} with {config}")
+    print(f"\n[1-{i}/4] {model.upper()} with {config}")
     print("⏱️  Starting at", time.strftime('%H:%M:%S'))
 
     cmd = [
@@ -154,15 +121,15 @@ for i, (model, config) in enumerate(BASELINES, 1):
         all_results.append((model.upper(), "FAILED", elapsed))
 
 # ============================================================================
-# 3. GNN Layer Benchmark 학습
+# 2. GNN Layer Benchmark 학습
 # ============================================================================
 print("\n" + "=" * 100)
-print("[Phase 3/3] GNN Layer Benchmark (v2~v7 All Versions)")
+print("[Phase 2/2] GNN Layer Benchmark (v2~v7 All Versions)")
 print("-" * 100)
 
 gnn_results = []
 for i, (name, model, desc, config) in enumerate(GNN_BENCHMARKS, 1):
-    print(f"\n[3-{i}/{len(GNN_BENCHMARKS)}] {name} - {desc}")
+    print(f"\n[2-{i}/{len(GNN_BENCHMARKS)}] {name} - {desc}")
     print("⏱️  Starting at", time.strftime('%H:%M:%S'))
 
     cmd = [
@@ -193,19 +160,13 @@ print("\n" + "=" * 100)
 print("📊 COMPLETE TRAINING SUMMARY")
 print("=" * 100)
 
-print("\n[Phase 1] CAGE-RF v2~v7")
-print("-" * 100)
-for name, status, elapsed in cage_rf_results:
-    icon = "✅" if status == "SUCCESS" else "❌"
-    print(f"{icon} {name:20s} | {status:8s} | {elapsed:7.1f}s")
-
-print("\n[Phase 2] Baseline Models")
+print("\n[Phase 1] Baseline Models")
 print("-" * 100)
 for name, status, elapsed in baseline_results:
     icon = "✅" if status == "SUCCESS" else "❌"
     print(f"{icon} {name:20s} | {status:8s} | {elapsed:7.1f}s")
 
-print("\n[Phase 3] GNN Layer Benchmark (v2~v7)")
+print("\n[Phase 2] GNN Layer Benchmark (v2~v7)")
 print("-" * 100)
 for name, status, elapsed in gnn_results:
     icon = "✅" if status == "SUCCESS" else "❌"
