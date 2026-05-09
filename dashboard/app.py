@@ -80,12 +80,8 @@ def load_page2_metrics():
         for version, config_name in versions:
             model_name = f"CAGE-RF {layer.upper()} {version}"
 
-            # v2는 파일명이 다름: metrics_cage_rf_gnn_{layer}_v2.json
-            if version == "v2":
-                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_v2.json")
-            else:
-                # v3~v7: metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json
-                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json")
+            # 파일명 패턴: metrics_cage_rf_gnn_{layer}_{config_name}.json
+            file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{config_name}.json")
 
             metrics = load_single_metric(file_path, model_name)
             if metrics:
@@ -113,35 +109,12 @@ def load_page3_metrics():
         for version, config_name in versions:
             model_name = f"CAGE-RF {layer.upper()} {version}"
 
-            if version == "v2":
-                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_v2.json")
-            else:
-                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json")
+            # 파일명 패턴: metrics_cage_rf_gnn_{layer}_{config_name}.json
+            file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{config_name}.json")
 
             metrics = load_single_metric(file_path, model_name)
             if metrics:
                 metrics_data[model_name] = metrics
-
-    # 기본 모델들도 추가 (v2~v9)
-    base_models = [
-        ("CAGE-RF v2", os.path.join(output_dir, "cage_rf_gnn", "metrics_v2.json")),
-        ("CAGE-RF v3", os.path.join(output_dir, "cage_rf_gnn", "metrics_v3_ablation.json")),
-        ("CAGE-RF v4", os.path.join(output_dir, "cage_rf_gnn", "metrics_v4_threshold_pr.json")),
-        ("CAGE-RF v5", os.path.join(output_dir, "cage_rf_gnn", "metrics_v5_oversampling.json")),
-        ("CAGE-RF v6", os.path.join(output_dir, "cage_rf_gnn", "metrics_v6_hard_mining.json")),
-        ("CAGE-RF v7", os.path.join(output_dir, "cage_rf_gnn", "metrics_v7_ensemble.json")),
-        ("CAGE-RF v8", os.path.join(output_dir, "cage_rf_gnn", "metrics_v8_skip.json")),
-        ("CAGE-RF v9", os.path.join(output_dir, "cage_rf_gnn", "metrics_v9_twostage.json")),
-        ("MLP", os.path.join(output_dir, "cage_rf_gnn", "metrics_mlp.json")),
-        ("GCN", os.path.join(output_dir, "cage_rf_gnn", "metrics_gcn.json")),
-        ("GraphSAGE", os.path.join(output_dir, "cage_rf_gnn", "metrics_graphsage.json")),
-        ("GAT", os.path.join(output_dir, "cage_rf_gnn", "metrics_gat.json")),
-    ]
-
-    for model_name, file_path in base_models:
-        metrics = load_single_metric(file_path, model_name)
-        if metrics:
-            metrics_data[model_name] = metrics
 
     return metrics_data
 
