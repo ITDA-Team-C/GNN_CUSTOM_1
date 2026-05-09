@@ -154,7 +154,18 @@ with tabs[0]:
     if gnn_benchmark_metrics:
         # v2(기본) 버전만 필터링
         pure_gnn = {k: v for k, v in gnn_benchmark_metrics.items() if 'v2' in k}
-        pure_df = pd.DataFrame(pure_gnn).T.sort_values("pr_auc", ascending=False)
+
+        if pure_gnn:
+            pure_df = pd.DataFrame(pure_gnn).T.sort_values("pr_auc", ascending=False)
+        else:
+            st.warning("⚠️ v2 버전 벤치마크 결과를 찾을 수 없습니다.")
+            st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
+            pure_df = None
+    else:
+        st.warning("⚠️ 벤치마크 결과가 없습니다.")
+        pure_df = None
+
+    if pure_df is not None:
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -211,8 +222,17 @@ with tabs[1]:
         # v2~v7만 필터링 (v8, v9 제외)
         cage_rf_v2_v7_metrics = {k: v for k, v in gnn_benchmark_metrics.items() if any(f'v{i}' in k for i in range(2, 8))}
 
-        comparison_df = pd.DataFrame(cage_rf_v2_v7_metrics).T.sort_values("pr_auc", ascending=False)
+        if cage_rf_v2_v7_metrics:
+            comparison_df = pd.DataFrame(cage_rf_v2_v7_metrics).T.sort_values("pr_auc", ascending=False)
+        else:
+            st.warning("⚠️ v2~v7 벤치마크 결과를 찾을 수 없습니다.")
+            st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
+            comparison_df = None
+    else:
+        st.warning("⚠️ 벤치마크 결과가 없습니다.")
+        comparison_df = None
 
+    if comparison_df is not None:
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("총 모델 수", len(comparison_df))
