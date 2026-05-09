@@ -174,17 +174,17 @@ for i, (name, model, desc, config) in enumerate(GNN_BENCHMARKS, 1):
     ]
 
     model_start = time.time()
-    success = run_training(cmd, f"GNN {name}")
+    success = run_training(cmd, f"CAGE-RF {name}")
     elapsed = time.time() - model_start
 
     if success:
         print(f"✅ {name} - {desc} completed in {elapsed:.1f}s")
-        gnn_results.append((f"GNN {name} {desc.split()[-1]}", "SUCCESS", elapsed))
-        all_results.append((f"GNN {name} {desc.split()[-1]}", "SUCCESS", elapsed))
+        gnn_results.append((f"CAGE-RF {name} {desc.split()[-1]}", "SUCCESS", elapsed))
+        all_results.append((f"CAGE-RF {name} {desc.split()[-1]}", "SUCCESS", elapsed))
     else:
         print(f"❌ {name} - {desc} failed")
-        gnn_results.append((f"GNN {name} {desc.split()[-1]}", "FAILED", elapsed))
-        all_results.append((f"GNN {name} {desc.split()[-1]}", "FAILED", elapsed))
+        gnn_results.append((f"CAGE-RF {name} {desc.split()[-1]}", "FAILED", elapsed))
+        all_results.append((f"CAGE-RF {name} {desc.split()[-1]}", "FAILED", elapsed))
 
 # ============================================================================
 # 최종 결과 요약

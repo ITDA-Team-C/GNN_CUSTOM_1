@@ -229,16 +229,46 @@ def main():
         print("No GNN benchmark results found yet. Train models using:")
         print("  python run_all_gnn_benchmarks.py")
 
+    # Calculate weighted score
+    if "pr_auc" in df.columns and "macro_f1" in df.columns:
+        df["weighted_score"] = df["pr_auc"] * 0.5 + df["macro_f1"] * 0.5
+
+    # 1. Top 10 by PR-AUC
     print("\n" + "=" * 130)
-    print("📈 Top 3 Models by PR-AUC (Overall)")
+    print("📈 Top 10 Models by PR-AUC")
     print("=" * 130)
 
     if "pr_auc" in df.columns:
-        top3 = df.nlargest(3, "pr_auc")
-        for rank, (model_name, row) in enumerate(top3.iterrows(), 1):
+        top10_pr = df.nlargest(10, "pr_auc")
+        for rank, (model_name, row) in enumerate(top10_pr.iterrows(), 1):
             pr_auc = row.get("pr_auc", "N/A")
             macro_f1 = row.get("macro_f1", "N/A")
-            print(f"{rank}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}")
+            print(f"{rank:2d}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}")
+
+    # 2. Top 10 by Macro-F1
+    print("\n" + "=" * 130)
+    print("📊 Top 10 Models by Macro-F1")
+    print("=" * 130)
+
+    if "macro_f1" in df.columns:
+        top10_f1 = df.nlargest(10, "macro_f1")
+        for rank, (model_name, row) in enumerate(top10_f1.iterrows(), 1):
+            pr_auc = row.get("pr_auc", "N/A")
+            macro_f1 = row.get("macro_f1", "N/A")
+            print(f"{rank:2d}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}")
+
+    # 3. Top 10 by Weighted Score (PR-AUC*0.5 + Macro-F1*0.5)
+    print("\n" + "=" * 130)
+    print("⭐ Top 10 Models by Weighted Score (PR-AUC*0.5 + Macro-F1*0.5)")
+    print("=" * 130)
+
+    if "weighted_score" in df.columns:
+        top10_weighted = df.nlargest(10, "weighted_score")
+        for rank, (model_name, row) in enumerate(top10_weighted.iterrows(), 1):
+            pr_auc = row.get("pr_auc", "N/A")
+            macro_f1 = row.get("macro_f1", "N/A")
+            weighted = row.get("weighted_score", "N/A")
+            print(f"{rank:2d}. {model_name:30s} | Weighted: {weighted:.4f} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}")
 
     print("=" * 130 + "\n")
 
