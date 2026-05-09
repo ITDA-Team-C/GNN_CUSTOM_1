@@ -12,11 +12,11 @@ class GAT(nn.Module):
         self.num_heads = num_heads
 
         self.convs = nn.ModuleList()
-        self.convs.append(GATConv(input_dim, hidden_dim // num_heads, heads=num_heads, dropout=dropout))
+        self.convs.append(GATConv(input_dim, hidden_dim // num_heads, heads=num_heads, concat=True))
 
         for _ in range(num_layers - 1):
             self.convs.append(
-                GATConv(hidden_dim, hidden_dim // num_heads, heads=num_heads, dropout=dropout)
+                GATConv(hidden_dim, hidden_dim // num_heads, heads=num_heads, concat=True)
             )
 
         self.classifier = nn.Sequential(
@@ -32,8 +32,7 @@ class GAT(nn.Module):
 
         for i, conv in enumerate(self.convs):
             x = conv(x, edge_index)
-            if i < len(self.convs) - 1:
-                x = torch.relu(x)
-                x = torch.nn.functional.dropout(x, p=self.dropout, training=self.training)
+            x = torch.relu(x)
+            x = torch.nn.functional.dropout(x, p=self.dropout, training=self.training)
 
         return self.classifier(x).squeeze(-1)
