@@ -97,5 +97,5 @@ evaluation:
   save_predictions: true
   save_embeddings: true
 
-version: "v9_twostage_cheb"
-version_description: "Two-Stage GNN on CHEB: Gating 신호로 embedding 정제, 강화된 fraud detection"
+version: "v9_twostage"
+version_description: "Two-Stage GNN: Gating 신호로 embedding 정제, 모든 GNN 레이어 호환"

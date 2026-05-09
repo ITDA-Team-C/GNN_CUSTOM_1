@@ -95,5 +95,5 @@ evaluation:
   save_predictions: true
   save_embeddings: true
 
-version: "v8_skip_cheb"
-version_description: "Skip Connection on CHEB: Over-smoothing 해결, 원본 정보 보존"
+version: "v8_skip"
+version_description: "Skip Connection: Over-smoothing 해결, 모든 GNN 레이어 호환"
