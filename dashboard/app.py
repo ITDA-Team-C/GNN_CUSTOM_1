@@ -90,7 +90,7 @@ def load_page2_metrics():
     return metrics_data
 
 def load_page3_metrics():
-    """Page 3: v2~v9 모든 버전 (56 models)"""
+    """Page 3: GNN Benchmark v2~v9 (56개) + Base Models v2~v9 + Baselines"""
     metrics_data = {}
     gnn_layers = ["sage", "gat", "gcn", "graphconv", "cheb", "tag", "sg"]
 
@@ -105,6 +105,7 @@ def load_page3_metrics():
         ("v9", "v9_twostage"),
     ]
 
+    # GNN Benchmark models (56개)
     for layer in gnn_layers:
         for version, config_name in versions:
             model_name = f"CAGE-RF {layer.upper()} {version}"
@@ -115,6 +116,27 @@ def load_page3_metrics():
             metrics = load_single_metric(file_path, model_name)
             if metrics:
                 metrics_data[model_name] = metrics
+
+    # Base Models (CAGE-RF v2~v9 + Baselines)
+    base_models = [
+        ("CAGE-RF v2", os.path.join(output_dir, "cage_rf_gnn", "metrics_v2.json")),
+        ("CAGE-RF v3", os.path.join(output_dir, "cage_rf_gnn", "metrics_v3_ablation.json")),
+        ("CAGE-RF v4", os.path.join(output_dir, "cage_rf_gnn", "metrics_v4_threshold_pr.json")),
+        ("CAGE-RF v5", os.path.join(output_dir, "cage_rf_gnn", "metrics_v5_oversampling.json")),
+        ("CAGE-RF v6", os.path.join(output_dir, "cage_rf_gnn", "metrics_v6_hard_mining.json")),
+        ("CAGE-RF v7", os.path.join(output_dir, "cage_rf_gnn", "metrics_v7_ensemble.json")),
+        ("CAGE-RF v8", os.path.join(output_dir, "cage_rf_gnn", "metrics_v8_skip.json")),
+        ("CAGE-RF v9", os.path.join(output_dir, "cage_rf_gnn", "metrics_v9_twostage.json")),
+        ("MLP", os.path.join(output_dir, "cage_rf_gnn", "metrics_mlp.json")),
+        ("GCN", os.path.join(output_dir, "cage_rf_gnn", "metrics_gcn.json")),
+        ("GraphSAGE", os.path.join(output_dir, "cage_rf_gnn", "metrics_graphsage.json")),
+        ("GAT", os.path.join(output_dir, "cage_rf_gnn", "metrics_gat.json")),
+    ]
+
+    for model_name, file_path in base_models:
+        metrics = load_single_metric(file_path, model_name)
+        if metrics:
+            metrics_data[model_name] = metrics
 
     return metrics_data
 
