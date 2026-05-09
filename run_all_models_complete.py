@@ -29,6 +29,12 @@ CAGE_RF_VERSIONS = [
     ("v7", "configs/v7_ensemble.yaml"),
 ]
 
+# V8, V9는 CHEB 레이어만 사용 (가장 성능 좋은 모델)
+CAGE_RF_ADVANCED = [
+    ("v8", "configs/v8_skip_cheb.yaml"),
+    ("v9", "configs/v9_twostage_cheb.yaml"),
+]
+
 BASELINES = [
     ("mlp", "configs/default.yaml"),
     ("gcn", "configs/default.yaml"),
@@ -59,6 +65,10 @@ GNN_VERSIONS = [
 for name, base_model, desc in GNN_LAYERS:
     for version, config in GNN_VERSIONS:
         GNN_BENCHMARKS.append((f"{name}", base_model, f"{desc} {version}", config))
+
+# CHEB v8, v9 추가 (가장 성능 좋은 모델의 고급 버전)
+for version, config in CAGE_RF_ADVANCED:
+    GNN_BENCHMARKS.append(("CHEB", "cage_rf_gnn_cheb", f"Chebyshev {version}", config))
 
 def run_training(cmd, model_name, timeout=3600):
     """학습 실행 헬퍼 함수"""

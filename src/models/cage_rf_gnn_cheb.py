@@ -4,19 +4,34 @@ from torch_geometric.nn import ChebConv
 
 
 class CAGERFGNNBranch(nn.Module):
-    def __init__(self, input_dim, hidden_dim=64, num_layers=2, dropout=0.3, K=3):
+    def __init__(self, input_dim, hidden_dim=64, num_layers=2, dropout=0.3, K=3, use_skip_connection=False):
         super().__init__()
         self.convs = nn.ModuleList()
         self.convs.append(ChebConv(input_dim, hidden_dim, K=K))
         for _ in range(num_layers - 1):
             self.convs.append(ChebConv(hidden_dim, hidden_dim, K=K))
         self.dropout = dropout
+        self.use_skip_connection = use_skip_connection
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        if use_skip_connection and input_dim != hidden_dim:
+            self.input_projection = nn.Linear(input_dim, hidden_dim)
+        else:
+            self.input_projection = None
 
     def forward(self, x, edge_index):
+        h = x
+        if self.use_skip_connection and self.input_projection is not None:
+            h = self.input_projection(h)
+
         for i, conv in enumerate(self.convs):
             x = conv(x, edge_index)
+            if self.use_skip_connection and i > 0:
+                x = x + h
             x = torch.relu(x)
             x = torch.nn.functional.dropout(x, p=self.dropout, training=self.training)
+            if self.use_skip_connection:
+                h = x
         return x
 
 
@@ -40,7 +55,7 @@ class RelationGate(nn.Module):
 
 class CAGERF_GNN(nn.Module):
     def __init__(self, input_dim, hidden_dim=64, num_layers=2, dropout=0.3, use_gating=True,
-                 use_ensemble=False, selected_relations=None, K=3):
+                 use_ensemble=False, selected_relations=None, K=3, use_skip_connection=False, use_two_stage=False):
         super().__init__()
 
         self.input_dim = input_dim
@@ -48,6 +63,8 @@ class CAGERF_GNN(nn.Module):
         self.use_gating = use_gating
         self.use_ensemble = use_ensemble
         self.selected_relations = selected_relations
+        self.use_skip_connection = use_skip_connection
+        self.use_two_stage = use_two_stage
 
         all_relations = ["rur", "rtr", "rsr", "burst", "semsim", "behavior"]
         if selected_relations is None:
@@ -57,7 +74,7 @@ class CAGERF_GNN(nn.Module):
 
         self.branches = nn.ModuleDict()
         for rel in self.active_relations:
-            self.branches[rel] = CAGERFGNNBranch(input_dim, hidden_dim, num_layers, dropout, K=K)
+            self.branches[rel] = CAGERFGNNBranch(input_dim, hidden_dim, num_layers, dropout, K=K, use_skip_connection=use_skip_connection)
 
         num_active_relations = len(self.active_relations)
 
@@ -120,6 +137,11 @@ class CAGERF_GNN(nn.Module):
             alpha = self.gate(relation_stack)
             h_fused = (alpha.squeeze(-1).unsqueeze(-1) * relation_stack).sum(dim=1)
             self.last_alpha = alpha
+
+            if self.use_two_stage:
+                alpha_weights = alpha.squeeze(-1)
+                weighted_relation_stack = relation_stack * alpha_weights.unsqueeze(-1)
+                h_fused = weighted_relation_stack.sum(dim=1)
         else:
             h_cat = torch.cat(relation_embeddings_list, dim=1)
             h_fused = h_cat

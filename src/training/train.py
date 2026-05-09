@@ -131,6 +131,8 @@ def create_model(model_name, input_dim, config):
             use_gating=cfg.get("use_gating", True),
             use_ensemble=cfg.get("use_ensemble", False),
             selected_relations=cfg.get("selected_relations", None),
+            use_skip_connection=cfg.get("use_skip_connection", False),
+            use_two_stage=cfg.get("use_two_stage", False),
             **extra_kwargs
         )
     else:
