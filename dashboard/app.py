@@ -199,8 +199,11 @@ with tabs[1]:
         # v2~v6만 필터링
         v2_v6_metrics = {k: v for k, v in all_metrics.items() if any(f'v{i}' in k for i in range(2, 7))}
 
-        # 벤치마크와 v2~v6 통합
-        comparison_data = {**v2_v6_metrics, **gnn_benchmark_metrics}
+        # 벤치마크 중 v2~v6만 필터링 (v8, v9 제외)
+        gnn_v2_v6_metrics = {k: v for k, v in gnn_benchmark_metrics.items() if any(f'v{i}' in k for i in range(2, 7))}
+
+        # v2~v6 통합
+        comparison_data = {**v2_v6_metrics, **gnn_v2_v6_metrics}
         comparison_df = pd.DataFrame(comparison_data).T.sort_values("pr_auc", ascending=False)
 
         col1, col2, col3 = st.columns(3)
