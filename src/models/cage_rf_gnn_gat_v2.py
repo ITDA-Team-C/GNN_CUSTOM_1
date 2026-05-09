@@ -8,18 +8,16 @@ class CAGERFGNNBranch(nn.Module):
         super().__init__()
         self.convs = nn.ModuleList()
         self.heads = heads
-        self.convs.append(GATConv(input_dim, hidden_dim, heads=heads, dropout=dropout))
+        self.convs.append(GATConv(input_dim, hidden_dim // heads, heads=heads, concat=True))
         for _ in range(num_layers - 1):
-            self.convs.append(GATConv(hidden_dim * heads, hidden_dim, heads=heads, dropout=dropout))
+            self.convs.append(GATConv(hidden_dim, hidden_dim // heads, heads=heads, concat=True))
         self.dropout = dropout
 
     def forward(self, x, edge_index):
         for i, conv in enumerate(self.convs):
             x = conv(x, edge_index)
-            if i < len(self.convs) - 1:
-                x = torch.relu(x)
+            x = torch.relu(x)
             x = torch.nn.functional.dropout(x, p=self.dropout, training=self.training)
-        x = x.mean(dim=-1) if len(x.shape) > 2 else x
         return x
 
 
