@@ -2,13 +2,18 @@
 # -*- coding: utf-8 -*-
 """
 모든 모델 통합 학습 스크립트
-CAGE-RF v2~v7 (6) + Baseline (4) + GNN Benchmark v2~v7 (7 GNN × 6 versions = 42) = 52개 모델
+Baseline (4) + GNN Benchmark v2~v9 (7 GNN × 8 versions = 56) = 60개 모델
 순서대로 학습 및 결과 비교
+
+버전별 설명:
+  v2~v7: 기존 버전들
+  v8: Skip Connection (Over-smoothing 해결)
+  v9: Two-Stage GNN (Skip + Gating 신호로 정제)
 
 폴더 구조:
   outputs/
-  ├── cage_rf_gnn/           (v2~v7 + Baselines)
-  └── benchmark/{GNN_TYPE}/  (SAGE, GAT, GCN, GraphConv, Cheb, TAG, SG × v2~v7)
+  ├── cage_rf_gnn/           (Baselines: MLP, GCN, GraphSAGE, GAT)
+  └── benchmark/{GNN_TYPE}/  (7 GNN layers × 8 versions v2~v9)
 """
 import subprocess
 import sys
@@ -27,12 +32,6 @@ CAGE_RF_VERSIONS = [
     ("v5", "configs/v5_oversampling.yaml"),
     ("v6", "configs/v6_hard_mining.yaml"),
     ("v7", "configs/v7_ensemble.yaml"),
-]
-
-# V8, V9는 CHEB 레이어만 사용 (가장 성능 좋은 모델)
-CAGE_RF_ADVANCED = [
-    ("v8", "configs/v8_skip_cheb.yaml"),
-    ("v9", "configs/v9_twostage_cheb.yaml"),
 ]
 
 BASELINES = [
@@ -60,15 +59,13 @@ GNN_VERSIONS = [
     ("v5", "configs/v5_oversampling.yaml"),
     ("v6", "configs/v6_hard_mining.yaml"),
     ("v7", "configs/v7_ensemble.yaml"),
+    ("v8", "configs/v8_skip_cheb.yaml"),
+    ("v9", "configs/v9_twostage_cheb.yaml"),
 ]
 
 for name, base_model, desc in GNN_LAYERS:
     for version, config in GNN_VERSIONS:
         GNN_BENCHMARKS.append((f"{name}", base_model, f"{desc} {version}", config))
-
-# CHEB v8, v9 추가 (가장 성능 좋은 모델의 고급 버전)
-for version, config in CAGE_RF_ADVANCED:
-    GNN_BENCHMARKS.append(("CHEB", "cage_rf_gnn_cheb", f"Chebyshev {version}", config))
 
 def run_training(cmd, model_name, timeout=3600):
     """학습 실행 헬퍼 함수"""
@@ -91,7 +88,10 @@ print("=" * 100)
 total_models = len(BASELINES) + len(GNN_BENCHMARKS)
 print(f"Total Models: {total_models}")
 print(f"  - Baselines: {len(BASELINES)}")
-print(f"  - GNN Benchmarks (v2~v7): {len(GNN_BENCHMARKS)} ({len(GNN_LAYERS)} GNN × 6 versions)")
+print(f"  - GNN Benchmarks (v2~v9): {len(GNN_BENCHMARKS)} ({len(GNN_LAYERS)} GNN × 8 versions)")
+print(f"    • v2~v7: Standard versions")
+print(f"    • v8: Skip Connection (Over-smoothing 해결)")
+print(f"    • v9: Two-Stage GNN (Skip + Gating 정제)")
 print("=" * 100)
 
 start_time = time.time()
@@ -134,7 +134,7 @@ for i, (model, config) in enumerate(BASELINES, 1):
 # 2. GNN Layer Benchmark 학습
 # ============================================================================
 print("\n" + "=" * 100)
-print("[Phase 2/2] GNN Layer Benchmark (v2~v7 All Versions)")
+print("[Phase 2/2] GNN Layer Benchmark (v2~v9 All Versions)")
 print("-" * 100)
 
 gnn_results = []
@@ -176,7 +176,7 @@ for name, status, elapsed in baseline_results:
     icon = "✅" if status == "SUCCESS" else "❌"
     print(f"{icon} {name:20s} | {status:8s} | {elapsed:7.1f}s")
 
-print("\n[Phase 2] GNN Layer Benchmark (v2~v7)")
+print("\n[Phase 2] GNN Layer Benchmark (v2~v9)")
 print("-" * 100)
 for name, status, elapsed in gnn_results:
     icon = "✅" if status == "SUCCESS" else "❌"
