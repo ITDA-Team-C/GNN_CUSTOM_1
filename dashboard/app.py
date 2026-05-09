@@ -95,102 +95,102 @@ def load_page3_metrics():
 
     # SAGE 모델들
     sage_models = [
-        ("CAGE-RF SAGE v2", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v2.json")),
-        ("CAGE-RF SAGE v3", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v3_ablation.json")),
-        ("CAGE-RF SAGE v4", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v4_threshold_pr.json")),
-        ("CAGE-RF SAGE v5", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v5_oversampling.json")),
-        ("CAGE-RF SAGE v6", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v6_hard_mining.json")),
-        ("CAGE-RF SAGE v7", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v7_ensemble.json")),
-        ("CAGE-RF SAGE v8", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v8_skip.json")),
-        ("CAGE-RF SAGE v9", os.path.join(output_dir, "benchmark", "SAGE", "metrics_cage_rf_gnn_sage_v9_twostage.json")),
+        ("CAGE-RF SAGE v2", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v2.json"),
+        ("CAGE-RF SAGE v3", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v3_ablation.json"),
+        ("CAGE-RF SAGE v4", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v4_threshold_pr.json"),
+        ("CAGE-RF SAGE v5", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v5_oversampling.json"),
+        ("CAGE-RF SAGE v6", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v6_hard_mining.json"),
+        ("CAGE-RF SAGE v7", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v7_ensemble.json"),
+        ("CAGE-RF SAGE v8", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v8_skip.json"),
+        ("CAGE-RF SAGE v9", "outputs/benchmark/SAGE/metrics_cage_rf_gnn_sage_v9_twostage.json"),
     ]
 
     # GAT 모델들
     gat_models = [
-        ("CAGE-RF GAT v2", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v2.json")),
-        ("CAGE-RF GAT v3", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v3_ablation.json")),
-        ("CAGE-RF GAT v4", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v4_threshold_pr.json")),
-        ("CAGE-RF GAT v5", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v5_oversampling.json")),
-        ("CAGE-RF GAT v6", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v6_hard_mining.json")),
-        ("CAGE-RF GAT v7", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v7_ensemble.json")),
-        ("CAGE-RF GAT v8", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v8_skip.json")),
-        ("CAGE-RF GAT v9", os.path.join(output_dir, "benchmark", "GAT", "metrics_cage_rf_gnn_gat_v9_twostage.json")),
+        ("CAGE-RF GAT v2", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v2.json"),
+        ("CAGE-RF GAT v3", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v3_ablation.json"),
+        ("CAGE-RF GAT v4", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v4_threshold_pr.json"),
+        ("CAGE-RF GAT v5", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v5_oversampling.json"),
+        ("CAGE-RF GAT v6", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v6_hard_mining.json"),
+        ("CAGE-RF GAT v7", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v7_ensemble.json"),
+        ("CAGE-RF GAT v8", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v8_skip.json"),
+        ("CAGE-RF GAT v9", "outputs/benchmark/GAT/metrics_cage_rf_gnn_gat_v9_twostage.json"),
     ]
 
     # GCN 모델들
     gcn_models = [
-        ("CAGE-RF GCN v2", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v2.json")),
-        ("CAGE-RF GCN v3", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v3_ablation.json")),
-        ("CAGE-RF GCN v4", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v4_threshold_pr.json")),
-        ("CAGE-RF GCN v5", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v5_oversampling.json")),
-        ("CAGE-RF GCN v6", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v6_hard_mining.json")),
-        ("CAGE-RF GCN v7", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v7_ensemble.json")),
-        ("CAGE-RF GCN v8", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v8_skip.json")),
-        ("CAGE-RF GCN v9", os.path.join(output_dir, "benchmark", "GCN", "metrics_cage_rf_gnn_gcn_v9_twostage.json")),
+        ("CAGE-RF GCN v2", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v2.json"),
+        ("CAGE-RF GCN v3", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v3_ablation.json"),
+        ("CAGE-RF GCN v4", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v4_threshold_pr.json"),
+        ("CAGE-RF GCN v5", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v5_oversampling.json"),
+        ("CAGE-RF GCN v6", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v6_hard_mining.json"),
+        ("CAGE-RF GCN v7", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v7_ensemble.json"),
+        ("CAGE-RF GCN v8", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v8_skip.json"),
+        ("CAGE-RF GCN v9", "outputs/benchmark/GCN/metrics_cage_rf_gnn_gcn_v9_twostage.json"),
     ]
 
     # GraphConv 모델들
     graphconv_models = [
-        ("CAGE-RF GRAPHCONV v2", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v2.json")),
-        ("CAGE-RF GRAPHCONV v3", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v3_ablation.json")),
-        ("CAGE-RF GRAPHCONV v4", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v4_threshold_pr.json")),
-        ("CAGE-RF GRAPHCONV v5", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v5_oversampling.json")),
-        ("CAGE-RF GRAPHCONV v6", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v6_hard_mining.json")),
-        ("CAGE-RF GRAPHCONV v7", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v7_ensemble.json")),
-        ("CAGE-RF GRAPHCONV v8", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v8_skip.json")),
-        ("CAGE-RF GRAPHCONV v9", os.path.join(output_dir, "benchmark", "GRAPHCONV", "metrics_cage_rf_gnn_graphconv_v9_twostage.json")),
+        ("CAGE-RF GRAPHCONV v2", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v2.json"),
+        ("CAGE-RF GRAPHCONV v3", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v3_ablation.json"),
+        ("CAGE-RF GRAPHCONV v4", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v4_threshold_pr.json"),
+        ("CAGE-RF GRAPHCONV v5", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v5_oversampling.json"),
+        ("CAGE-RF GRAPHCONV v6", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v6_hard_mining.json"),
+        ("CAGE-RF GRAPHCONV v7", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v7_ensemble.json"),
+        ("CAGE-RF GRAPHCONV v8", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v8_skip.json"),
+        ("CAGE-RF GRAPHCONV v9", "outputs/benchmark/GRAPHCONV/metrics_cage_rf_gnn_graphconv_v9_twostage.json"),
     ]
 
     # CHEB 모델들
     cheb_models = [
-        ("CAGE-RF CHEB v2", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v2.json")),
-        ("CAGE-RF CHEB v3", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v3_ablation.json")),
-        ("CAGE-RF CHEB v4", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v4_threshold_pr.json")),
-        ("CAGE-RF CHEB v5", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v5_oversampling.json")),
-        ("CAGE-RF CHEB v6", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v6_hard_mining.json")),
-        ("CAGE-RF CHEB v7", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v7_ensemble.json")),
-        ("CAGE-RF CHEB v8", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v8_skip.json")),
-        ("CAGE-RF CHEB v9", os.path.join(output_dir, "benchmark", "CHEB", "metrics_cage_rf_gnn_cheb_v9_twostage.json")),
+        ("CAGE-RF CHEB v2", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v2.json"),
+        ("CAGE-RF CHEB v3", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v3_ablation.json"),
+        ("CAGE-RF CHEB v4", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v4_threshold_pr.json"),
+        ("CAGE-RF CHEB v5", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v5_oversampling.json"),
+        ("CAGE-RF CHEB v6", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v6_hard_mining.json"),
+        ("CAGE-RF CHEB v7", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v7_ensemble.json"),
+        ("CAGE-RF CHEB v8", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v8_skip.json"),
+        ("CAGE-RF CHEB v9", "outputs/benchmark/CHEB/metrics_cage_rf_gnn_cheb_v9_twostage.json"),
     ]
 
     # TAG 모델들
     tag_models = [
-        ("CAGE-RF TAG v2", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v2.json")),
-        ("CAGE-RF TAG v3", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v3_ablation.json")),
-        ("CAGE-RF TAG v4", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v4_threshold_pr.json")),
-        ("CAGE-RF TAG v5", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v5_oversampling.json")),
-        ("CAGE-RF TAG v6", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v6_hard_mining.json")),
-        ("CAGE-RF TAG v7", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v7_ensemble.json")),
-        ("CAGE-RF TAG v8", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v8_skip.json")),
-        ("CAGE-RF TAG v9", os.path.join(output_dir, "benchmark", "TAG", "metrics_cage_rf_gnn_tag_v9_twostage.json")),
+        ("CAGE-RF TAG v2", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v2.json"),
+        ("CAGE-RF TAG v3", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v3_ablation.json"),
+        ("CAGE-RF TAG v4", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v4_threshold_pr.json"),
+        ("CAGE-RF TAG v5", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v5_oversampling.json"),
+        ("CAGE-RF TAG v6", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v6_hard_mining.json"),
+        ("CAGE-RF TAG v7", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v7_ensemble.json"),
+        ("CAGE-RF TAG v8", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v8_skip.json"),
+        ("CAGE-RF TAG v9", "outputs/benchmark/TAG/metrics_cage_rf_gnn_tag_v9_twostage.json"),
     ]
 
     # SG 모델들
     sg_models = [
-        ("CAGE-RF SG v2", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v2.json")),
-        ("CAGE-RF SG v3", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v3_ablation.json")),
-        ("CAGE-RF SG v4", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v4_threshold_pr.json")),
-        ("CAGE-RF SG v5", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v5_oversampling.json")),
-        ("CAGE-RF SG v6", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v6_hard_mining.json")),
-        ("CAGE-RF SG v7", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v7_ensemble.json")),
-        ("CAGE-RF SG v8", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v8_skip.json")),
-        ("CAGE-RF SG v9", os.path.join(output_dir, "benchmark", "SG", "metrics_cage_rf_gnn_sg_v9_twostage.json")),
+        ("CAGE-RF SG v2", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v2.json"),
+        ("CAGE-RF SG v3", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v3_ablation.json"),
+        ("CAGE-RF SG v4", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v4_threshold_pr.json"),
+        ("CAGE-RF SG v5", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v5_oversampling.json"),
+        ("CAGE-RF SG v6", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v6_hard_mining.json"),
+        ("CAGE-RF SG v7", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v7_ensemble.json"),
+        ("CAGE-RF SG v8", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v8_skip.json"),
+        ("CAGE-RF SG v9", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v9_twostage.json"),
     ]
 
     # Base Models
     base_models = [
-        ("CAGE-RF v2", os.path.join(output_dir, "cage_rf_gnn", "metrics_v2.json")),
-        ("CAGE-RF v3", os.path.join(output_dir, "cage_rf_gnn", "metrics_v3_ablation.json")),
-        ("CAGE-RF v4", os.path.join(output_dir, "cage_rf_gnn", "metrics_v4_threshold_pr.json")),
-        ("CAGE-RF v5", os.path.join(output_dir, "cage_rf_gnn", "metrics_v5_oversampling.json")),
-        ("CAGE-RF v6", os.path.join(output_dir, "cage_rf_gnn", "metrics_v6_hard_mining.json")),
-        ("CAGE-RF v7", os.path.join(output_dir, "cage_rf_gnn", "metrics_v7_ensemble.json")),
-        ("CAGE-RF v8", os.path.join(output_dir, "cage_rf_gnn", "metrics_v8_skip.json")),
-        ("CAGE-RF v9", os.path.join(output_dir, "cage_rf_gnn", "metrics_v9_twostage.json")),
-        ("MLP", os.path.join(output_dir, "cage_rf_gnn", "metrics_mlp.json")),
-        ("GCN", os.path.join(output_dir, "cage_rf_gnn", "metrics_gcn.json")),
-        ("GraphSAGE", os.path.join(output_dir, "cage_rf_gnn", "metrics_graphsage.json")),
-        ("GAT", os.path.join(output_dir, "cage_rf_gnn", "metrics_gat.json")),
+        ("CAGE-RF v2", "outputs/cage_rf_gnn/metrics_v2.json"),
+        ("CAGE-RF v3", "outputs/cage_rf_gnn/metrics_v3_ablation.json"),
+        ("CAGE-RF v4", "outputs/cage_rf_gnn/metrics_v4_threshold_pr.json"),
+        ("CAGE-RF v5", "outputs/cage_rf_gnn/metrics_v5_oversampling.json"),
+        ("CAGE-RF v6", "outputs/cage_rf_gnn/metrics_v6_hard_mining.json"),
+        ("CAGE-RF v7", "outputs/cage_rf_gnn/metrics_v7_ensemble.json"),
+        ("CAGE-RF v8", "outputs/cage_rf_gnn/metrics_v8_skip.json"),
+        ("CAGE-RF v9", "outputs/cage_rf_gnn/metrics_v9_twostage.json"),
+        ("MLP", "outputs/cage_rf_gnn/metrics_mlp.json"),
+        ("GCN", "outputs/cage_rf_gnn/metrics_gcn.json"),
+        ("GraphSAGE", "outputs/cage_rf_gnn/metrics_graphsage.json"),
+        ("GAT", "outputs/cage_rf_gnn/metrics_gat.json"),
     ]
 
     # 모든 모델 로드
