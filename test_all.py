@@ -115,22 +115,49 @@ def save_results(df, output_dir):
     df.to_csv(csv_path)
     print(f"✅ Results saved to CSV: {csv_path}")
 
-    # TXT 저장
+    # TXT 저장 (상세 리포트)
     txt_path = output_dir / f"comparison_results_{timestamp}.txt"
     with open(txt_path, 'w', encoding='utf-8') as f:
         f.write("=" * 130 + "\n")
-        f.write("🏆 Model Performance Comparison (Test Set)\n")
+        f.write("🏆 Model Performance Comparison (Test Set - All Models)\n")
         f.write("=" * 130 + "\n\n")
         f.write(df.to_string())
         f.write("\n\n" + "=" * 130 + "\n")
-        f.write("Top 3 Models by PR-AUC:\n")
+
+        # Top 10 by PR-AUC
+        f.write("📈 Top 10 Models by PR-AUC\n")
         f.write("=" * 130 + "\n")
         if "pr_auc" in df.columns:
-            top3 = df.nlargest(3, "pr_auc")
-            for rank, (model_name, row) in enumerate(top3.iterrows(), 1):
+            top10_pr = df.nlargest(10, "pr_auc")
+            for rank, (model_name, row) in enumerate(top10_pr.iterrows(), 1):
                 pr_auc = row.get("pr_auc", "N/A")
                 macro_f1 = row.get("macro_f1", "N/A")
-                f.write(f"{rank}. {model_name:30s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}\n")
+                f.write(f"{rank:2d}. {model_name:35s} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}\n")
+        f.write("\n")
+
+        # Top 10 by Macro-F1
+        f.write("📊 Top 10 Models by Macro-F1\n")
+        f.write("=" * 130 + "\n")
+        if "macro_f1" in df.columns:
+            top10_f1 = df.nlargest(10, "macro_f1")
+            for rank, (model_name, row) in enumerate(top10_f1.iterrows(), 1):
+                pr_auc = row.get("pr_auc", "N/A")
+                macro_f1 = row.get("macro_f1", "N/A")
+                f.write(f"{rank:2d}. {model_name:35s} | Macro-F1: {macro_f1:.4f} | PR-AUC: {pr_auc:.4f}\n")
+        f.write("\n")
+
+        # Top 10 by Weighted Score
+        if "pr_auc" in df.columns and "macro_f1" in df.columns:
+            df_temp = df.copy()
+            df_temp["weighted_score"] = df_temp["pr_auc"] * 0.5 + df_temp["macro_f1"] * 0.5
+            f.write("⭐ Top 10 Models by Weighted Score (PR-AUC*0.5 + Macro-F1*0.5)\n")
+            f.write("=" * 130 + "\n")
+            top10_weighted = df_temp.nlargest(10, "weighted_score")
+            for rank, (model_name, row) in enumerate(top10_weighted.iterrows(), 1):
+                pr_auc = row.get("pr_auc", "N/A")
+                macro_f1 = row.get("macro_f1", "N/A")
+                weighted = row.get("weighted_score", "N/A")
+                f.write(f"{rank:2d}. {model_name:35s} | Weighted: {weighted:.4f} | PR-AUC: {pr_auc:.4f} | Macro-F1: {macro_f1:.4f}\n")
     print(f"✅ Results saved to TXT: {txt_path}")
 
 
