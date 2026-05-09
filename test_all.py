@@ -157,15 +157,36 @@ def main():
         ("GCN", output_dir / "cage_rf_gnn" / "metrics_gcn.json"),
         ("GraphSAGE", output_dir / "cage_rf_gnn" / "metrics_graphsage.json"),
         ("GAT", output_dir / "cage_rf_gnn" / "metrics_gat.json"),
-        # GNN Layer Benchmarks (v7) - outputs/benchmark/{TYPE}/
-        ("CAGE-RF SAGE v7", output_dir / "benchmark" / "SAGE" / "metrics_cage_rf_gnn_sage_v7_ensemble.json"),
-        ("CAGE-RF GAT v7", output_dir / "benchmark" / "GAT" / "metrics_cage_rf_gnn_gat_v7_ensemble.json"),
-        ("CAGE-RF GCN v7", output_dir / "benchmark" / "GCN" / "metrics_cage_rf_gnn_gcn_v7_ensemble.json"),
-        ("CAGE-RF GraphConv v7", output_dir / "benchmark" / "GRAPHCONV" / "metrics_cage_rf_gnn_graphconv_v7_ensemble.json"),
-        ("CAGE-RF Cheb v7", output_dir / "benchmark" / "CHEB" / "metrics_cage_rf_gnn_cheb_v7_ensemble.json"),
-        ("CAGE-RF TAG v7", output_dir / "benchmark" / "TAG" / "metrics_cage_rf_gnn_tag_v7_ensemble.json"),
-        ("CAGE-RF SG v7", output_dir / "benchmark" / "SG" / "metrics_cage_rf_gnn_sg_v7_ensemble.json"),
     ]
+
+    # GNN Layer Benchmarks (v2~v7) - outputs/benchmark/{TYPE}/
+    gnn_layers = [
+        ("SAGE", "GraphSAGE"),
+        ("GAT", "Graph Attention Network"),
+        ("GCN", "Graph Convolutional Network"),
+        ("GRAPHCONV", "Graph Convolution"),
+        ("CHEB", "Chebyshev"),
+        ("TAG", "Topology Adaptive GCN"),
+        ("SG", "Simplifying GCNs"),
+    ]
+
+    version_configs = [
+        ("v2", "default"),
+        ("v3", "v3_ablation"),
+        ("v4", "v4_threshold_pr"),
+        ("v5", "v5_oversampling"),
+        ("v6", "v6_hard_mining"),
+        ("v7", "v7_ensemble"),
+    ]
+
+    for gnn_type, gnn_desc in gnn_layers:
+        for version, config_name in version_configs:
+            if version == "v7":
+                metrics_file = f"metrics_cage_rf_gnn_{gnn_type.lower()}_{config_name}.json"
+            else:
+                metrics_file = f"metrics_cage_rf_gnn_{gnn_type.lower()}_{config_name}.json"
+            model_name = f"CAGE-RF {gnn_type} {version}"
+            models_to_compare.append((model_name, output_dir / "benchmark" / gnn_type / metrics_file))
 
     results = {}
     found_count = 0
