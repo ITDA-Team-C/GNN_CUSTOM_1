@@ -177,7 +177,7 @@ def load_page3_metrics():
         ("CAGE-RF SG v9", "outputs/benchmark/SG/metrics_cage_rf_gnn_sg_v9_twostage.json"),
     ]
 
-    # Base Models (CAGE-RF v2~v9만)
+    # Base Models (CAGE-RF v2~v9 + MLP)
     base_models = [
         ("CAGE-RF v2", "outputs/cage_rf_gnn/metrics_v2.json"),
         ("CAGE-RF v3", "outputs/cage_rf_gnn/metrics_v3_ablation.json"),
@@ -187,6 +187,7 @@ def load_page3_metrics():
         ("CAGE-RF v7", "outputs/cage_rf_gnn/metrics_v7_ensemble.json"),
         ("CAGE-RF v8", "outputs/cage_rf_gnn/metrics_v8_skip.json"),
         ("CAGE-RF v9", "outputs/cage_rf_gnn/metrics_v9_twostage.json"),
+        ("MLP", "outputs/cage_rf_gnn/metrics_mlp.json"),
     ]
 
     # 모든 모델 로드
