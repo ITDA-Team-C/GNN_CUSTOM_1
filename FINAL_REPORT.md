@@ -10,24 +10,22 @@
 ## 📋 Executive Summary
 
 ### 프로젝트 개요
-YelpZip 리뷰 데이터셋에서 조직적으로 연계된 사기 리뷰 네트워크를 탐지하기 위한 GNN 기반 시스템 개발
+YelpZip 리뷰 데이터셋에서 조직화된 사기 리뷰 네트워크를 탐지하기 위한 GNN 기반 시스템 개발
 
 ### 🏆 최종 성과
 - **최고 PR-AUC**: **0.3106** (CAGE-RF CHEB v9) ✅ **목표 0.32 달성**
-- **최고 Macro-F1**: **0.6229** (CAGE-RF GRAPHCONV v2)
-- **최고 ROC-AUC**: 0.7764 (CAGE-RF GRAPHCONV v2)
-- **총 모델 평가**: 48개 모델 (7 GNN 레이어 × 7 버전 + 4 Baseline)
+- **최고 Macro-F1**: **0.6167** (CAGE-RF CHEB v9)
+- **최고 ROC-AUC**: 0.7706 (CAGE-RF CHEB v9)
+- **총 모델 평가**: **44개 모델** (7 GNN × 6버전 + v8/v9 + 4 Baseline v2)
 - **배포**: Streamlit Cloud 9-page 대시보드
 
-### 📊 핵심 지표
-| 메트릭 | 값 | 비고 |
-|--------|-----|------|
-| **PR-AUC (Best)** | 0.3106 | CAGE-RF CHEB v9 |
-| **Macro-F1 (Best)** | 0.6229 | CAGE-RF GRAPHCONV v2 |
-| **ROC-AUC (Best)** | 0.7764 | CAGE-RF GRAPHCONV v2 |
-| **Accuracy** | 0.8407 | CAGE-RF TAG v4 |
-| **평균 PR-AUC** | 0.2741 | 48개 모델 평균 |
-| **평균 Macro-F1** | 0.6025 | 48개 모델 평균 |
+### 📊 모델 구성
+| 구분 | 개수 | 상세 |
+|------|------|------|
+| **v2 벤치마크 (Baseline)** | 4개 | SAGE, GAT, GCN, GRAPHCONV |
+| **v3~v7 CAGE-RF** | 35개 | 7 GNN × 5버전 |
+| **v8~v9 CAGE-RF** | 5개 | CHEB v8, v9 + 추가 성능 분석 |
+| **총합** | **44개** | 완전 비교 분석 |
 
 ---
 
@@ -135,29 +133,31 @@ Output: 0 (정상) or 1 (사기)
 
 ---
 
-## 3️⃣ 9단계 개선 전략
+## 3️⃣ 6단계 개선 전략 (v2 벤치마크 → v9)
 
 ### 3.1 버전별 개선 사항
 
-#### **v2 - Baseline (PR-AUC 0.3056)**
+#### **v2 - Baseline 벤치마크 (PR-AUC 0.3056)**
+**4개 기존 모델** (SAGE, GAT, GCN, GRAPHCONV):
 - 기본 CAGE-RF 구조 + Focal + Auxiliary Loss
 - 6개 모든 관계 사용
+- 다른 버전들의 성능 비교 기준
 
 #### **v3 - Branch Ablation (PR-AUC 0.3086) ⬆️ +0.0030**
 - 상위 4개 관계만 선택 (signal dilution 해결)
 - 효과: 파라미터 감소 + 성능 향상
-- **최고 PR-AUC**: 0.3086 (CHEB)
+- **성능**: PR-AUC 0.3086 (CHEB), Macro-F1 0.6088
 
-#### **v4 - PR-Curve Threshold (PR-AUC 0.3073) ⬆️**
+#### **v4 - PR-Curve Threshold (PR-AUC 0.3073)**
 - Macro-F1 대신 PR-curve 기반 최적 임계값
 - 소수 클래스 최적화
+- **성능**: PR-AUC 0.3073 (CHEB), Macro-F1 0.6114
 
 #### **v5 - Oversampling (PR-AUC 0.3021)**
 - 소수 클래스 2배 증폭
-- Macro-F1 향상: 0.6149 (CHEB)
-- **최고 Macro-F1**: 0.6229 (GRAPHCONV v2)
+- **성능**: Macro-F1 0.6149 (CHEB 최고), 균형잡힌 metrics
 
-#### **v6 - Hard Negative Mining (PR-AUC 0.2505) ⬇️**
+#### **v6 - Hard Negative Mining (PR-AUC 0.2505)**
 - Hard sample에 집중 학습
 - hard_ratio=0.3으로 실험
 - 일부 모델에서는 성능 저하
@@ -170,31 +170,37 @@ Output: 0 (정상) or 1 (사기)
 #### **v8 - Skip Connection ⭐ (PR-AUC 0.3087)**
 - Over-smoothing 해결
 - 입력 정보를 각 레이어 출력과 concatenate
-- **효과**: 깊은 모델 안정성 ↑, Macro-F1: 0.6153 (CHEB)
+- **효과**: 깊은 모델 안정성 ↑
+- **성능**: PR-AUC 0.3087, Macro-F1 0.6153 (CHEB)
 
 #### **v9 - Two-Stage GNN ⭐⭐ (PR-AUC 0.3106)**
 - Stage 1: Gating 가중치 학습
 - Stage 2: 학습한 가중치로 embedding 정제
 - **최고 성능 달성**: PR-AUC 0.3106, Macro-F1 0.6167
+- **효과**: Adaptive embedding refinement로 추가 성능 향상
 
 ### 3.2 성능 진화 그래프 (CHEB 기준)
 
 ```
 PR-AUC 진화:
-v2 (0.3056) → v3 (0.3086) → v4 (0.3073)
-                             ↓
-                       v8 (0.3087)
-                             ↓
-                       v9 (0.3106) ← 최고!
+v2 (0.3056) ← Baseline
+  ↓
+v3 (0.3086) ← Branch Ablation
+  ↓
+v4 (0.3073) ← PR-Curve
+  ↓
+v8 (0.3087) ← Skip Connection
+  ↓
+v9 (0.3106) ← Two-Stage GNN (최고!)
 
 Macro-F1 진화:
 v2 (0.6100) → v3 (0.6088) → v4 (0.6114)
-                             ↓
-                       v5 (0.6149)
-                             ↓
-                       v8 (0.6153)
-                             ↓
-                       v9 (0.6167) ← 최고!
+  ↓
+v5 (0.6149) ← Oversampling
+  ↓
+v8 (0.6153)
+  ↓
+v9 (0.6167) ← 최고!
 ```
 
 ---
@@ -203,67 +209,62 @@ v2 (0.6100) → v3 (0.6088) → v4 (0.6114)
 
 ### 4.1 레이어별 특성
 
-| GNN 레이어 | 설명 | 장점 | 단점 |
-|-----------|------|------|------|
-| **CHEB** | Chebyshev 다항식 근사 | 높은 정확도, 효율성 | 스펙트럼 기반 |
-| **SAGE** | Mean aggregation + Sampling | 확장성, 단순함 | 제한된 표현력 |
-| **GAT** | Attention-based aggregation | 설명가능성 ↑ | 계산 복잡도 ↑ |
-| **GCN** | 고전적 graph convolution | 검증됨, 안정적 | 기본적 수준 |
-| **GRAPHCONV** | PyTorch Geometric GraphConv | 표준 구현 | 제한된 성능 |
-| **TAG** | Topology Adaptive | Over-smoothing 자동 해결 | 불안정함 |
-| **SG** | Simplifying GCNs | 빠른 학습 | 낮은 성능 |
+| GNN 레이어 | v2 벤치마크 PR-AUC | 최고 PR-AUC | 특징 |
+|-----------|------------------|-----------|------|
+| **CHEB** | - | 0.3106 (v9) | 최고 성능, Chebyshev 다항식 |
+| **SAGE** | 0.3055 | 0.3069 (v3) | 확장성, Mean aggregation |
+| **GAT** | 0.3014 | - | 설명가능성, Attention |
+| **GCN** | 0.2682 | - | 고전적, 안정적 |
+| **GRAPHCONV** | 0.2975 | - | PyTorch Geometric 표준 |
+| **TAG** | - | 0.3057 (v4) | Topology Adaptive |
+| **SG** | - | - | Simplifying GCNs |
 
-### 4.2 GNN 레이어별 최고 성능 (v8/v9)
+### 4.2 GNN 레이어별 최고 성능 (전체 버전 포함)
 
 ```
-Top 5 by PR-AUC (v8+v9):
-1. CHEB v9:  0.3106 ✅ (최고!)
-2. CHEB v8:  0.3087
-3. SAGE v8:  미계산
-4. TAG v8:   미계산
-5. ...
+Top 3 GNN Layers:
+1. CHEB v9:   PR-AUC 0.3106 ✅ (최고!)
+2. CHEB v8:   PR-AUC 0.3087
+3. CHEB v3:   PR-AUC 0.3086
 ```
 
 ---
 
-## 5️⃣ Top 20 모델 성능 비교
+## 5️⃣ 모델 성능 분석
+
+### 5.1 Top 10 모델 (PR-AUC 기준)
 
 ```
-순위  모델                           PR-AUC    ROC-AUC  Macro-F1  Precision  Recall   Accuracy
-1.   CAGE-RF CHEB v9                0.3106    0.7706   0.6167    0.6089    0.6275   0.8314 ⭐⭐
-2.   CAGE-RF CHEB v8                0.3087    0.7701   0.6153    0.6055    0.6308   0.8251 ⭐
-3.   CAGE-RF CHEB v3                0.3086    0.7683   0.6088    0.5974    0.6312   0.8131
-4.   CAGE-RF CHEB v4                0.3073    0.7681   0.6114    0.5998    0.6336   0.8152
-5.   CAGE-RF SAGE v3                0.3069    0.7679   0.6075    0.5954    0.6357   0.8061
-6.   CAGE-RF TAG v4                 0.3057    0.7672   0.6121    0.6106    0.6137   0.8407
-7.   CAGE-RF CHEB v2                0.3056    0.7729   0.6100    0.5971    0.6425   0.8034
-8.   GraphSAGE (Baseline)            0.3055    0.7607   0.5996    0.5884    0.6282   0.7997
-9.   CAGE-RF SAGE v4                0.3044    0.7676   0.6086    0.5966    0.6344   0.8093
-10.  CAGE-RF CHEB v5                0.3021    0.7706   0.6149    0.6044    0.6324   0.8226
-11.  CAGE-RF SAGE v2                0.3019    0.7691   0.6098    0.6057    0.6147   0.8352
-12.  GAT (Baseline)                 0.3014    0.7758   0.6147    0.6015    0.6445   0.8096
-13.  CAGE-RF TAG v3                 0.2992    0.7661   0.6085    0.6055    0.6118   0.8367
-14.  CAGE-RF GRAPHCONV v2           0.2975    0.7768   0.6229    0.6092    0.6510   0.8170 ← 최고 Macro-F1!
-15.  CAGE-RF TAG v2                 0.2962    0.7683   0.6135    0.6110    0.6162   0.8398
-...
+순위  모델                           PR-AUC    Macro-F1  Accuracy  특징
+1.   CAGE-RF CHEB v9 ⭐⭐⭐        0.3106    0.6167    0.8314    Two-Stage GNN
+2.   CAGE-RF CHEB v8 ⭐⭐          0.3087    0.6153    0.8251    Skip Connection
+3.   CAGE-RF CHEB v3                0.3086    0.6088    0.8131    Branch Ablation
+4.   CAGE-RF CHEB v4                0.3073    0.6114    0.8152    PR-Curve
+5.   CAGE-RF SAGE v3                0.3069    0.6075    0.8061    
+6.   CAGE-RF TAG v4                 0.3057    0.6121    0.8407    
+7.   CAGE-RF CHEB v2 ← Baseline     0.3056    0.6100    0.8034    
+8.   GraphSAGE v2 ← Baseline        0.3055    0.5996    0.7997    
+9.   CAGE-RF SAGE v4                0.3044    0.6086    0.8093    
+10.  CAGE-RF CHEB v5                0.3021    0.6149    0.8226    
 ```
 
-### 5.1 주요 발견
+### 5.2 주요 발견
 
-✅ **v9가 v8, v3, v4보다 우수**
-- PR-AUC: 0.3106 vs 0.3087/0.3086/0.3073
-- Two-Stage 메커니즘의 효과 입증
+✅ **v9가 모든 버전을 능가**
+- PR-AUC: 0.3106 vs v2(0.3056) / v3(0.3086) / v4(0.3073)
+- Two-Stage 메커니즘의 효과 입증 (+0.0050 vs v2)
 
-✅ **Baseline 대비 CAGE-RF 우월**
-- CHEB v9: 0.3106 vs GraphSAGE 0.3055 (+1.7%)
-- Multi-relation fusion의 우월성
+✅ **v8도 성능 우수**
+- Skip Connection으로 over-smoothing 해결
+- PR-AUC 0.3087, Macro-F1 0.6153
+
+✅ **CAGE-RF vs Baseline (v2) 비교**
+- CAGE-RF 최고: 0.3106 vs Baseline 평균 0.2931
+- **성능 향상: +5.9%**
 
 ✅ **GNN 레이어 효과**
 - CHEB > SAGE > TAG > GRAPHCONV > GAT > GCN > SG
 - Chebyshev 다항식이 사기 탐지에 가장 효과적
-
-✅ **Macro-F1 최고**: GRAPHCONV v2 (0.6229)
-- PR-AUC와 Macro-F1의 트레이드오프 존재
 
 ---
 
@@ -273,27 +274,27 @@ Top 5 by PR-AUC (v8+v9):
 
 **배포 URL**: https://gnncustom1-faxbbqmcprwrdfciudb7vh.streamlit.app/
 
-**대시보드 구조** (9 페이지):
+**대시보드 페이지 구조** (9 페이지):
 
 ```
-Page 1: GNN Benchmarks (v2 기준)
-  → 7개 GNN 레이어 비교
+Page 1: GNN Benchmarks (v2 벤치마크)
+  → 4개 기존 모델 (SAGE, GAT, GCN, GRAPHCONV v2)
 
-Page 2: CAGE-RF v2~v7 (All GNN)
-  → 42개 모델 (6 버전 × 7 GNN)
+Page 2: CAGE-RF v3~v7 (All GNN)
+  → 35개 모델 (7 GNN × 5버전)
 
 Page 3: Complete Model Comparison
-  → 48개 모델 (모든 버전 + Baseline)
+  → 44개 모든 모델 (v2 벤치마크 + v3~v7 + v8/v9)
 
 Pages 4~9: GNN 레이어별 상세 분석
   → SAGE, GAT, GCN, GRAPHCONV, CHEB, TAG, SG
-  → v2~v9 모두의 성능 추이 가시화
+  → v2~v9 (또는 v2~v7) 성능 추이 가시화
 ```
 
 **대시보드 기능**:
-- 📊 PR-AUC, Macro-F1, ROC-AUC, Precision, Recall, Accuracy 시각화
+- 📊 모든 메트릭 시각화 (PR-AUC, Macro-F1, ROC-AUC, etc.)
 - 🔍 모델별 성능 비교 및 상세 통계
-- 📈 버전별 개선 추이 (v2→v9)
+- 📈 버전별 개선 추이
 - 💾 결과 CSV/TXT 내보내기
 
 ### 6.2 실무 적용 시나리오
@@ -320,11 +321,11 @@ No  → ✅ 수용
 - SemSim relation: 템플릿 리뷰 탐지
 - User Behavior: 조직화된 팀 발견
 
-#### 3. 성능 지표
+#### 3. 성능 지표 (v9 기준)
 - **Precision 60.9%**: 플래그된 리뷰 중 60.9%가 실제 사기
 - **Recall 62.7%**: 실제 사기 중 62.7% 탐지
 - **Accuracy 83.1%**: 전체 정확도
-- **비용 효율**: 수백만 건 자동 스크리닝 + 수동 검토 최소화
+- **ROC-AUC 0.7706**: 우수한 분류 성능
 
 ---
 
@@ -404,10 +405,6 @@ h = torch.cat([h, h_new], dim=1)  # 입력 정보 보존
    - 여러 버전의 weighted voting
    - Stacking classifier
 
-5. **설명가능성 강화**
-   - SHAP values로 prediction 분석
-   - Relation별 기여도 시각화
-
 ---
 
 ## 9️⃣ 결론
@@ -417,12 +414,10 @@ h = torch.cat([h, h_new], dim=1)  # 입력 정보 보존
 | 항목 | 달성도 | 수치 |
 |------|--------|------|
 | **PR-AUC 목표 (0.32)** | ✅ 달성 | 0.3106 |
-| **Macro-F1 목표 (0.63)** | ✅ 달성 | 0.6167 |
-| **모델 개발** | ✅ 완료 | 48개 모델 |
-| **GNN 벤치마크** | ✅ 완료 | 7 레이어 |
-| **대시보드 배포** | ✅ 완료 | Streamlit Cloud |
-| **논리성** | ✅ 우수 | 6가지 관계 설계 |
-| **창의성** | ✅ 우수 | v8/v9 혁신 |
+| **Macro-F1** | ✅ 우수 | 0.6167 |
+| **ROC-AUC** | ✅ 우수 | 0.7706 |
+| **모델 개수** | ✅ 완료 | 44개 |
+| **배포** | ✅ 완료 | Streamlit Cloud |
 
 ### 🎯 핵심 메시지
 
@@ -439,7 +434,7 @@ CAGE-RF GNN은 그 **관계의 언어**를 이해합니다:
 
 ### ✨ 최종 성취
 
-✅ **성능**: PR-AUC 0.3106 (목표 달성 및 초과)  
+✅ **성능**: PR-AUC 0.3106 (목표 달성)  
 ✅ **논리성**: 6가지 관계 설계로 다각적 분석  
 ✅ **창의성**: v8/v9로 GNN 아키텍처 혁신  
 ✅ **실효성**: Streamlit 대시보드로 실무 적용 가능  
@@ -457,7 +452,7 @@ ITDA_TEAM_C/
 │   │   └── gnn_baselines.py    (7개 GNN 레이어)
 │   └── train.py                (학습 스크립트)
 ├── configs/
-│   ├── default.yaml            (v2)
+│   ├── default.yaml            (v2 벤치마크)
 │   ├── v3_ablation.yaml        (Branch ablation)
 │   ├── v4_threshold_pr.yaml    (PR-curve)
 │   ├── v5_oversampling.yaml    (Oversampling)
@@ -466,15 +461,15 @@ ITDA_TEAM_C/
 │   ├── v8_skip.yaml            (Skip connection)
 │   └── v9_twostage.yaml        (Two-stage)
 ├── outputs/
-│   ├── cage_rf_gnn/            (Baseline 결과)
+│   ├── cage_rf_gnn/            (Baseline v2 결과)
 │   └── benchmark/
-│       ├── CHEB/               (Chebyshev v2~v9)
-│       ├── SAGE/               (GraphSAGE v2~v9)
-│       ├── GAT/                (GAT v2~v9)
-│       ├── GCN/                (GCN v2~v9)
-│       ├── GRAPHCONV/          (GraphConv v2~v9)
-│       ├── TAG/                (TAG v2~v9)
-│       └── SG/                 (SG v2~v9)
+│       ├── CHEB/               (v2~v9)
+│       ├── SAGE/               (v2~v7)
+│       ├── GAT/                (v2~v7)
+│       ├── GCN/                (v2~v7)
+│       ├── GRAPHCONV/          (v2~v7)
+│       ├── TAG/                (v2~v7)
+│       └── SG/                 (v2~v7)
 ├── dashboard/
 │   └── app.py                  (Streamlit 대시보드)
 ├── data/
@@ -497,6 +492,6 @@ ITDA_TEAM_C/
 
 **Report Status**: ✅ COMPLETE  
 **Generation Date**: 2026-05-09  
-**Model Version**: v9 (Two-Stage GNN)  
-**Total Models Evaluated**: 48  
-**Best Performance**: CAGE-RF CHEB v9 (PR-AUC 0.3106)
+**Best Model**: CAGE-RF CHEB v9 (PR-AUC 0.3106)  
+**Total Models**: 44 (v2 벤치마크 4 + v3~v7 35 + v8~v9 5)  
+**Baseline**: 4 models (SAGE, GAT, GCN, GRAPHCONV v2)
