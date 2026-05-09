@@ -25,7 +25,7 @@ processed_dir = "data/processed"
 output_dir = "outputs"
 
 # ============================================================================
-# 데이터 로딩 함수
+# 데이터 로딩 함수 - 하드코딩된 경로
 # ============================================================================
 
 def load_data():
@@ -37,11 +37,93 @@ def load_data():
     except:
         return None, None
 
-def load_all_metrics():
-    """모든 모델의 metrics 로드 (v2~v9 + Baselines)"""
-    metrics_data = {}
+def load_single_metric(file_path, model_name):
+    """단일 메트릭 파일 로드"""
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+                return data.get("test_metrics", {})
+        except:
+            return None
+    return None
 
-    models = [
+def load_page1_metrics():
+    """Page 1: 순수 GNN Layers (v2만)"""
+    metrics_data = {}
+    gnn_layers = ["sage", "gat", "gcn", "graphconv", "cheb", "tag", "sg"]
+
+    for layer in gnn_layers:
+        model_name = f"CAGE-RF {layer.upper()} v2"
+        file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_v2.json")
+        metrics = load_single_metric(file_path, model_name)
+        if metrics:
+            metrics_data[model_name] = metrics
+
+    return metrics_data
+
+def load_page2_metrics():
+    """Page 2: v2~v7 (6 versions × 7 layers = 42 models)"""
+    metrics_data = {}
+    gnn_layers = ["sage", "gat", "gcn", "graphconv", "cheb", "tag", "sg"]
+
+    versions = [
+        ("v2", "default"),
+        ("v3", "v3_ablation"),
+        ("v4", "v4_threshold_pr"),
+        ("v5", "v5_oversampling"),
+        ("v6", "v6_hard_mining"),
+        ("v7", "v7_ensemble"),
+    ]
+
+    for layer in gnn_layers:
+        for version, config_name in versions:
+            model_name = f"CAGE-RF {layer.upper()} {version}"
+
+            # v2는 파일명이 다름: metrics_cage_rf_gnn_{layer}_v2.json
+            if version == "v2":
+                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_v2.json")
+            else:
+                # v3~v7: metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json
+                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json")
+
+            metrics = load_single_metric(file_path, model_name)
+            if metrics:
+                metrics_data[model_name] = metrics
+
+    return metrics_data
+
+def load_page3_metrics():
+    """Page 3: v2~v9 모든 버전 (56 models)"""
+    metrics_data = {}
+    gnn_layers = ["sage", "gat", "gcn", "graphconv", "cheb", "tag", "sg"]
+
+    versions = [
+        ("v2", "default"),
+        ("v3", "v3_ablation"),
+        ("v4", "v4_threshold_pr"),
+        ("v5", "v5_oversampling"),
+        ("v6", "v6_hard_mining"),
+        ("v7", "v7_ensemble"),
+        ("v8", "v8_skip"),
+        ("v9", "v9_twostage"),
+    ]
+
+    for layer in gnn_layers:
+        for version, config_name in versions:
+            model_name = f"CAGE-RF {layer.upper()} {version}"
+
+            if version == "v2":
+                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_v2.json")
+            else:
+                file_path = os.path.join(output_dir, "benchmark", layer.upper(), f"metrics_cage_rf_gnn_{layer}_{version}_{config_name}.json")
+
+            metrics = load_single_metric(file_path, model_name)
+            if metrics:
+                metrics_data[model_name] = metrics
+
+    # 기본 모델들도 추가 (v2~v9)
+    base_models = [
         ("CAGE-RF v2", os.path.join(output_dir, "cage_rf_gnn", "metrics_v2.json")),
         ("CAGE-RF v3", os.path.join(output_dir, "cage_rf_gnn", "metrics_v3_ablation.json")),
         ("CAGE-RF v4", os.path.join(output_dir, "cage_rf_gnn", "metrics_v4_threshold_pr.json")),
@@ -56,52 +138,16 @@ def load_all_metrics():
         ("GAT", os.path.join(output_dir, "cage_rf_gnn", "metrics_gat.json")),
     ]
 
-    for model_name, file_path in models:
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r') as f:
-                    data = json.load(f)
-                    metrics_data[model_name] = data.get("test_metrics", {})
-            except:
-                pass
+    for model_name, file_path in base_models:
+        metrics = load_single_metric(file_path, model_name)
+        if metrics:
+            metrics_data[model_name] = metrics
 
     return metrics_data
 
-def load_gnn_benchmark_metrics():
-    """GNN 벤치마크 metrics 로드 (outputs/benchmark/{TYPE}/ v2~v9)"""
-    metrics_data = {}
-
-    gnn_layers = ["SAGE", "GAT", "GCN", "GRAPHCONV", "CHEB", "TAG", "SG"]
-    versions = [
-        ("v2", "default"),
-        ("v3", "v3_ablation"),
-        ("v4", "v4_threshold_pr"),
-        ("v5", "v5_oversampling"),
-        ("v6", "v6_hard_mining"),
-        ("v7", "v7_ensemble"),
-        ("v8", "v8_skip"),
-        ("v9", "v9_twostage"),
-    ]
-
-    for gnn_type in gnn_layers:
-        for version, config_name in versions:
-            model_name = f"CAGE-RF {gnn_type} {version}"
-
-            # 파일명 패턴이 다름: v2는 버전만, v3~v9는 버전_config_name
-            if config_name == "default":  # v2의 경우
-                file_path = os.path.join(output_dir, "benchmark", gnn_type, f"metrics_cage_rf_gnn_{gnn_type.lower()}_{version}.json")
-            else:  # v3~v9의 경우
-                file_path = os.path.join(output_dir, "benchmark", gnn_type, f"metrics_cage_rf_gnn_{gnn_type.lower()}_{version}_{config_name}.json")
-
-            if os.path.exists(file_path):
-                try:
-                    with open(file_path, 'r') as f:
-                        data = json.load(f)
-                        metrics_data[model_name] = data.get("test_metrics", {})
-                except:
-                    pass
-
-    return metrics_data
+def load_all_metrics():
+    """모든 모델의 metrics 로드 (v2~v9 + Baselines)"""
+    return load_page3_metrics()
 
 def validate_labels():
     """라벨 데이터 검증"""
@@ -124,9 +170,9 @@ def validate_labels():
 
 # 데이터 로드
 nodes_df, features = load_data()
-all_metrics = load_all_metrics()
-gnn_benchmark_metrics = load_gnn_benchmark_metrics()
-combined_metrics = {**all_metrics, **gnn_benchmark_metrics}
+page1_metrics = load_page1_metrics()
+page2_metrics = load_page2_metrics()
+page3_metrics = load_page3_metrics()
 label_validation = validate_labels()
 
 # ============================================================================
@@ -135,7 +181,7 @@ label_validation = validate_labels()
 
 tabs = st.tabs([
     "1️⃣ 벤치마크 성능비교",
-    "2️⃣ v2~v6 + 벤치마크",
+    "2️⃣ v2~v7 + 벤치마크",
     "3️⃣ v8,v9 포함 전체",
     "4️⃣ 라벨 검증",
     "5️⃣ 데이터 개요",
@@ -152,21 +198,8 @@ with tabs[0]:
     st.header("🔬 순수 GNN Layers 성능 (v2 Default - 기본 설정)")
     st.markdown("각 GNN Layer를 기본 설정(v2)으로만 학습한 7개 모델 성능")
 
-    if gnn_benchmark_metrics:
-        # v2(기본) 버전만 필터링
-        pure_gnn = {k: v for k, v in gnn_benchmark_metrics.items() if 'v2' in k}
-
-        if pure_gnn:
-            pure_df = pd.DataFrame(pure_gnn).T.sort_values("pr_auc", ascending=False)
-        else:
-            st.warning("⚠️ v2 버전 벤치마크 결과를 찾을 수 없습니다.")
-            st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
-            pure_df = None
-    else:
-        st.warning("⚠️ 벤치마크 결과가 없습니다.")
-        pure_df = None
-
-    if pure_df is not None:
+    if page1_metrics:
+        pure_df = pd.DataFrame(page1_metrics).T.sort_values("pr_auc", ascending=False)
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -190,7 +223,7 @@ with tabs[0]:
 
         fig = go.Figure(
             data=[go.Bar(
-                x=[x.split()[-2] for x in pure_df.index],  # Extract layer name (SAGE, GAT, etc)
+                x=[x.split()[-2] for x in pure_df.index],
                 y=pure_df['pr_auc'],
                 marker=dict(color=pure_df['pr_auc'], colorscale='Viridis'),
                 text=pure_df['pr_auc'].round(4),
@@ -211,29 +244,20 @@ with tabs[0]:
         - **TAG**: 위상 정보 적응
         - **SG**: 단순화된 GCN, 효율성 최고
         """)
+    else:
+        st.warning("⚠️ Page 1 벤치마크 결과를 찾을 수 없습니다.")
+        st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
 
 # ============================================================================
-# Tab 2: v2~v6 + 벤치마크
+# Tab 2: v2~v7 + 벤치마크
 # ============================================================================
 with tabs[1]:
     st.header("📊 CAGE-RF v2~v7 + 모든 GNN Benchmark")
     st.markdown("CAGE-RF 모델 6개 버전 × 7개 GNN Layer = 42개 모델 성능 비교")
 
-    if gnn_benchmark_metrics:
-        # v2~v7만 필터링 (v8, v9 제외)
-        cage_rf_v2_v7_metrics = {k: v for k, v in gnn_benchmark_metrics.items() if any(f'v{i}' in k for i in range(2, 8))}
+    if page2_metrics:
+        comparison_df = pd.DataFrame(page2_metrics).T.sort_values("pr_auc", ascending=False)
 
-        if cage_rf_v2_v7_metrics:
-            comparison_df = pd.DataFrame(cage_rf_v2_v7_metrics).T.sort_values("pr_auc", ascending=False)
-        else:
-            st.warning("⚠️ v2~v7 벤치마크 결과를 찾을 수 없습니다.")
-            st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
-            comparison_df = None
-    else:
-        st.warning("⚠️ 벤치마크 결과가 없습니다.")
-        comparison_df = None
-
-    if comparison_df is not None:
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("총 모델 수", len(comparison_df))
@@ -263,6 +287,9 @@ with tabs[1]:
         )
         fig.update_traces(textposition='top center', marker=dict(size=8))
         st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("⚠️ Page 2 벤치마크 결과를 찾을 수 없습니다.")
+        st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
 
 # ============================================================================
 # Tab 3: v8, v9 포함 전체 모델
@@ -271,8 +298,8 @@ with tabs[2]:
     st.header("⭐ v2~v9 모든 모델 + 벤치마크 (전체)")
     st.markdown("최신 버전(v8, v9)을 포함한 모든 모델 성능 비교")
 
-    if combined_metrics:
-        all_df = pd.DataFrame(combined_metrics).T.sort_values("pr_auc", ascending=False)
+    if page3_metrics:
+        all_df = pd.DataFrame(page3_metrics).T.sort_values("pr_auc", ascending=False)
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -299,12 +326,13 @@ with tabs[2]:
 
         with col2:
             st.subheader("🏅 Top 10 (v2~v8 Without v9)")
-            v2_v8 = {k: v for k, v in combined_metrics.items() if 'v9' not in k}
-            top10_v2v8 = pd.DataFrame(v2_v8).T.sort_values("pr_auc", ascending=False).head(10)
-            st.dataframe(
-                top10_v2v8[['pr_auc', 'macro_f1', 'roc_auc']].style.format("{:.4f}"),
-                use_container_width=True
-            )
+            v2_v8 = {k: v for k, v in page3_metrics.items() if 'v9' not in k}
+            if v2_v8:
+                top10_v2v8 = pd.DataFrame(v2_v8).T.sort_values("pr_auc", ascending=False).head(10)
+                st.dataframe(
+                    top10_v2v8[['pr_auc', 'macro_f1', 'roc_auc']].style.format("{:.4f}"),
+                    use_container_width=True
+                )
 
         st.markdown("---")
         st.subheader("📊 전체 모델 PR-AUC 비교")
@@ -324,6 +352,9 @@ with tabs[2]:
 
         st.markdown("---")
         st.markdown("**범례**: 🔴=V9 | 🟠=V8 | 🔵=V2~V7")
+    else:
+        st.warning("⚠️ Page 3 벤치마크 결과를 찾을 수 없습니다.")
+        st.info("다음 명령어로 학습해주세요:\npython run_all_models_complete.py")
 
 # ============================================================================
 # Tab 4: 라벨 검증
@@ -443,9 +474,9 @@ with tabs[5]:
     st.header("📊 Fraud Score 상세 분석")
     st.markdown("최고 성능 모델의 Fraud Score 분포 및 Threshold Simulator")
 
-    if combined_metrics:
-        best_model = pd.DataFrame(combined_metrics).T.sort_values("pr_auc", ascending=False).index[0]
-        best_metrics = combined_metrics[best_model]
+    if page3_metrics:
+        best_model = pd.DataFrame(page3_metrics).T.sort_values("pr_auc", ascending=False).index[0]
+        best_metrics = page3_metrics[best_model]
 
         st.subheader(f"🏆 최고 성능 모델: {best_model}")
         col1, col2, col3, col4 = st.columns(4)
@@ -461,9 +492,8 @@ with tabs[5]:
         st.markdown("---")
         st.subheader("📈 Fraud Score 분포 (시뮬레이션)")
 
-        # 정상 및 사기 score 분포 시뮬레이션
-        normal_scores = np.random.beta(7, 3, 1000) * 0.3  # 낮은 점수
-        fraud_scores = np.random.beta(3, 7, 1000) * 0.6 + 0.4  # 높은 점수
+        normal_scores = np.random.beta(7, 3, 1000) * 0.3
+        fraud_scores = np.random.beta(3, 7, 1000) * 0.6 + 0.4
 
         fig = go.Figure()
         fig.add_trace(go.Histogram(x=normal_scores, name='정상 (0)', nbinsx=30, opacity=0.7, marker=dict(color='#4ECDC4')))
@@ -483,7 +513,6 @@ with tabs[5]:
 
         threshold = st.slider("Fraud Score Threshold", 0.0, 1.0, 0.5, 0.01)
 
-        # Threshold에 따른 metrics 변화 시뮬레이션
         fraud_detected = (fraud_scores > threshold).sum() / len(fraud_scores)
         false_positive = (normal_scores > threshold).sum() / len(normal_scores)
 
@@ -519,7 +548,6 @@ with tabs[6]:
 
     st.markdown("---")
 
-    # Relation 기여도 시뮬레이션
     relation_names = ['R-U-R', 'R-T-R', 'R-S-R', 'Burst', 'SemanticSim', 'Behavior']
     contribution = np.array([0.28, 0.22, 0.18, 0.15, 0.12, 0.05])
 
@@ -541,7 +569,6 @@ with tabs[6]:
     st.markdown("---")
     st.subheader("📈 Version별 Relation 기여도 변화")
 
-    # 버전별 relation 기여도 변화 시뮬레이션
     versions = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9']
     rur_contrib = [0.25, 0.26, 0.27, 0.27, 0.28, 0.28, 0.29, 0.30]
     rtr_contrib = [0.20, 0.21, 0.22, 0.22, 0.22, 0.22, 0.21, 0.20]
@@ -569,7 +596,6 @@ with tabs[7]:
     st.subheader("🚨 Top Fraud Cases (의심 사례)")
     st.markdown("가장 높은 Fraud Score를 받은 상위 10개 리뷰 샘플")
 
-    # 시뮬레이션 데이터
     fraud_cases = pd.DataFrame({
         'Review ID': [f'REV_{i}' for i in range(1, 11)],
         'Fraud Score': np.random.uniform(0.85, 0.99, 10),
@@ -607,10 +633,8 @@ with tabs[7]:
     st.markdown("---")
     st.subheader("📈 Network Visualization (Ego Graph)")
 
-    # Ego network 시뮬레이션
     fig = go.Figure()
 
-    # 중심 노드
     fig.add_trace(go.Scatter(
         x=[0], y=[0],
         mode='markers+text',
@@ -621,7 +645,6 @@ with tabs[7]:
         hovertext='Fraud Score: 0.95'
     ))
 
-    # 관련 노드들 (R-U-R, R-T-R 등)
     angles = np.linspace(0, 2*np.pi, 12, endpoint=False)
     x_pos = np.cos(angles)
     y_pos = np.sin(angles)
@@ -637,7 +660,6 @@ with tabs[7]:
         name='Related Reviews'
     ))
 
-    # 연결선
     for x, y in zip(x_pos, y_pos):
         fig.add_trace(go.Scatter(
             x=[0, x], y=[0, y],
@@ -737,8 +759,8 @@ with tabs[8]:
     st.markdown("---")
     st.subheader("📈 성능 비교 요약")
 
-    if combined_metrics:
-        summary_df = pd.DataFrame(combined_metrics).T.sort_values("pr_auc", ascending=False)
+    if page3_metrics:
+        summary_df = pd.DataFrame(page3_metrics).T.sort_values("pr_auc", ascending=False)
         summary_stats = {
             "항목": ["최고 PR-AUC", "평균 PR-AUC", "최고 Macro-F1", "평균 Macro-F1", "총 모델 수"],
             "값": [
