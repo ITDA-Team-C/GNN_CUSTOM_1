@@ -28,7 +28,6 @@ output_dir = "outputs"
 # 데이터 로딩 함수
 # ============================================================================
 
-@st.cache_data
 def load_data():
     """기본 데이터 로드"""
     try:
@@ -38,7 +37,6 @@ def load_data():
     except:
         return None, None
 
-@st.cache_data
 def load_all_metrics():
     """모든 모델의 metrics 로드 (v2~v9 + Baselines)"""
     metrics_data = {}
@@ -69,7 +67,6 @@ def load_all_metrics():
 
     return metrics_data
 
-@st.cache_data
 def load_gnn_benchmark_metrics():
     """GNN 벤치마크 metrics 로드 (outputs/benchmark/{TYPE}/ v2~v9)"""
     metrics_data = {}
@@ -106,7 +103,6 @@ def load_gnn_benchmark_metrics():
 
     return metrics_data
 
-@st.cache_data
 def validate_labels():
     """라벨 데이터 검증"""
     try:
