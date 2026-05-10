@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import scipy.io as sio
+from scipy import sparse
 from pathlib import Path
 from src.utils import set_seed
 
@@ -10,7 +11,7 @@ set_seed(42)
 CONFIG = {
     "raw_dir": "data/raw",
     "interim_dir": "data/interim",
-    "filename": "amazon.mat",  # .mat 파일
+    "filename": "amazon.mat",
 }
 
 
@@ -18,69 +19,53 @@ def load_amazon():
     """
     Amazon 데이터 로드 (.mat 파일)
 
-    필요한 컬럼:
-    - user_id: 사용자 ID
-    - prod_id: 제품 ID
-    - rating: 별점 (1-5)
-    - review_text: 리뷰 텍스트
-    - label: 0 (정상 사용자), 1 (사기꾼 사용자)
+    구조:
+    - homo: 그래프 행렬 (11944x11944)
+    - net_upu: User-Product-User 그래프 (sparse)
+    - net_usu: User-Star-User 그래프 (sparse)
+    - net_uvu: User-Vocab-User 그래프 (sparse)
+    - features: 노드 특징 (11944x25)
+    - label: 노드 라벨 (1x11944)
     """
     raw_path = os.path.join(CONFIG["raw_dir"], CONFIG["filename"])
 
     if not os.path.exists(raw_path):
         raise FileNotFoundError(
-            f"Amazon 파일을 찾을 수 없습니다: {raw_path}\n"
-            f"data/raw/ 폴더에 Amazon .mat 파일을 배치하세요.\n"
-            f"필수 컬럼: user_id, prod_id, rating, review_text, label"
+            f"Amazon file not found: {raw_path}\n"
+            f"Place amazon.mat in data/raw/"
         )
 
-    print(f"[Load] {raw_path} 로딩 중...")
+    print(f"[Load] {raw_path} loading...")
 
     # .mat 파일 로드
     mat_data = sio.loadmat(raw_path)
-
-    # 메타 정보 제거 (MATLAB은 메타 정보를 자동으로 추가)
     mat_data = {k: v for k, v in mat_data.items() if not k.startswith('__')}
 
-    print(f"  .mat 파일 내 변수: {list(mat_data.keys())}")
+    print(f"  Variables: {list(mat_data.keys())}")
 
-    # DataFrame 변환
-    df = _convert_mat_to_dataframe(mat_data)
+    # 데이터 구조 확인
+    result = {
+        'num_nodes': mat_data['label'].shape[1],
+        'label': mat_data['label'].flatten().astype(int),
+        'features': mat_data['features'],
+    }
 
-    print(f"  총 행 수: {len(df)}")
-    print(f"  컬럼: {list(df.columns)}")
+    # 그래프 구조
+    if 'net_upu' in mat_data:
+        result['net_upu'] = sparse.csr_matrix(mat_data['net_upu'])
+    if 'net_usu' in mat_data:
+        result['net_usu'] = sparse.csr_matrix(mat_data['net_usu'])
+    if 'net_uvu' in mat_data:
+        result['net_uvu'] = sparse.csr_matrix(mat_data['net_uvu'])
+    if 'homo' in mat_data:
+        result['homo'] = sparse.csr_matrix(mat_data['homo'])
 
-    return df
+    print(f"  Num nodes: {result['num_nodes']}")
+    print(f"  Feature shape: {result['features'].shape}")
+    print(f"  Label distribution: {np.bincount(result['label'])}")
 
+    return result
 
-def _convert_mat_to_dataframe(mat_data):
-    """
-    MATLAB 구조체를 DataFrame으로 변환
-    필요에 따라 수정하세요
-    """
-    data_dict = {}
-
-    # 일반적인 변수명들
-    possible_keys = ['user_id', 'prod_id', 'product_id', 'rating', 'review_text', 'text', 'label']
-
-    for key in possible_keys:
-        if key in mat_data:
-            data = mat_data[key]
-            # numpy 배열을 리스트로 변환
-            if isinstance(data, np.ndarray):
-                if data.dtype.kind in ['U', 'S', 'O']:  # 문자열
-                    data_dict[key] = [str(x).strip() for x in data.flatten()]
-                else:  # 숫자
-                    data_dict[key] = data.flatten().tolist()
-
-    if not data_dict:
-        raise ValueError(
-            f"예상되는 변수를 찾을 수 없습니다.\n"
-            f"사용 가능한 변수: {list(mat_data.keys())}\n"
-            f"load_amazon.py의 _convert_mat_to_dataframe() 함수를 수정하세요."
-        )
-
-    return pd.DataFrame(data_dict)
 
 
 
