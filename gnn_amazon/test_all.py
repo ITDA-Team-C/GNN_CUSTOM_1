@@ -49,7 +49,7 @@ def main():
     test_idx = torch.from_numpy(test_idx).long().to(device)
 
     in_channels = features.shape[1]
-    hidden_channels = 64
+    hidden_channels = 32
     out_channels = 1
     num_relations = 4
 
