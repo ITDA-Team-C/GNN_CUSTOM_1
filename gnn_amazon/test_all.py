@@ -1,11 +1,10 @@
 """
-Test and compare all 10 trained Amazon GNN models
+Test and compare all 10 Amazon GNN models
 """
 import os
 import json
 import numpy as np
 import torch
-from tabulate import tabulate
 
 from src.training.dataloader import create_data_loaders
 from src.training.utils import evaluate
@@ -20,17 +19,16 @@ from src.utils import set_seed
 set_seed(42)
 
 
-def load_preprocessed_data():
+def load_data():
     """Load preprocessed Amazon data"""
     features = np.load("data/processed/features.npy")
     labels = np.load("data/processed/labels.npy")
-
     edge_data = torch.load("data/processed/edge_index_dict.pt")
-    # Keep as tensors - dataloader will handle both numpy and tensor inputs
+    split_data = torch.load("data/processed/split_idx.pt")
+
     edge_indices = [edge_data['net_upu'], edge_data['net_usu'],
                     edge_data['net_uvu'], edge_data['homo']]
 
-    split_data = torch.load("data/processed/split_idx.pt")
     train_idx = split_data['train_idx'].numpy()
     val_idx = split_data['val_idx'].numpy()
     test_idx = split_data['test_idx'].numpy()
@@ -38,35 +36,23 @@ def load_preprocessed_data():
     return features, labels, edge_indices, train_idx, val_idx, test_idx
 
 
-def get_device():
-    """Get GPU device if available"""
-    if torch.cuda.is_available():
-        return torch.device('cuda')
-    else:
-        return torch.device('cpu')
-
-
 def main():
-    device = get_device()
-    print(f"Using device: {device}\n")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Device: {device}\n")
 
-    print("Loading preprocessed data...")
-    features, labels, edge_indices, train_idx, val_idx, test_idx = load_preprocessed_data()
+    print("Loading data...")
+    features, labels, edge_indices, train_idx, val_idx, test_idx = load_data()
 
-    in_channels = features.shape[1]
-    hidden_channels = 64
-    out_channels = 1  # Binary classification
-    num_relations = 4
-
-    print(f"Features shape: {features.shape}")
-    print(f"Labels shape: {labels.shape}\n")
-
-    print("Creating data loaders...")
     _, _, test_loader = create_data_loaders(
         features, labels, edge_indices, train_idx, val_idx, test_idx, batch_size=256
     )
 
-    models_config = {
+    in_channels = features.shape[1]
+    hidden_channels = 64
+    out_channels = 1
+    num_relations = 4
+
+    models = {
         'MLP': MLPModel(in_channels, hidden_channels, out_channels),
         'GCN': GCNModel(in_channels, hidden_channels, out_channels, num_relations),
         'SAGE': SAGEModel(in_channels, hidden_channels, out_channels, num_relations),
@@ -81,69 +67,24 @@ def main():
 
     results = {}
 
-    print("\n" + "="*80)
-    print("Evaluating all models on test set")
-    print("="*80 + "\n")
-
-    for model_name, model in models_config.items():
-        model_path = f"outputs/output_amazon/models/{model_name}.pt"
-
-        if not os.path.exists(model_path):
-            print(f"Warning: {model_name} model not found at {model_path}")
+    print("Evaluating models...\n")
+    for name, model in models.items():
+        path = f"outputs/output_amazon/models/{name}.pt"
+        if not os.path.exists(path):
+            print(f"{name}: Model not found")
             continue
 
-        print(f"Loading and evaluating {model_name}...")
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.load_state_dict(torch.load(path, map_location=device))
         model.to(device)
-
-        metrics, y_true, y_pred_proba = evaluate(model, test_loader, edge_indices, device)
-        results[model_name] = metrics
-
-        print(f"  PR-AUC: {metrics['pr_auc']:.4f}, "
-              f"ROC-AUC: {metrics['roc_auc']:.4f}, "
-              f"Macro-F1: {metrics['macro_f1']:.4f}\n")
-
-    print("="*80)
-    print("Test Set Performance Comparison")
-    print("="*80 + "\n")
-
-    table_data = []
-    for model_name in sorted(results.keys()):
-        m = results[model_name]
-        table_data.append([
-            model_name,
-            f"{m['pr_auc']:.4f}",
-            f"{m['roc_auc']:.4f}",
-            f"{m['macro_f1']:.4f}",
-            f"{m['best_threshold']:.4f}"
-        ])
-
-    headers = ["Model", "PR-AUC", "ROC-AUC", "Macro-F1", "Best Threshold"]
-    print(tabulate(table_data, headers=headers, tablefmt='grid'))
-
-    print("\nRankings by Metric:")
-    print("-" * 40)
-
-    pr_auc_ranking = sorted(results.items(), key=lambda x: x[1]['pr_auc'], reverse=True)
-    print("\nPR-AUC Ranking:")
-    for rank, (name, m) in enumerate(pr_auc_ranking[:5], 1):
-        print(f"  {rank}. {name}: {m['pr_auc']:.4f}")
-
-    roc_auc_ranking = sorted(results.items(), key=lambda x: x[1]['roc_auc'], reverse=True)
-    print("\nROC-AUC Ranking:")
-    for rank, (name, m) in enumerate(roc_auc_ranking[:5], 1):
-        print(f"  {rank}. {name}: {m['roc_auc']:.4f}")
-
-    f1_ranking = sorted(results.items(), key=lambda x: x[1]['macro_f1'], reverse=True)
-    print("\nMacro-F1 Ranking:")
-    for rank, (name, m) in enumerate(f1_ranking[:5], 1):
-        print(f"  {rank}. {name}: {m['macro_f1']:.4f}")
+        metrics, _, _ = evaluate(model, test_loader, edge_indices, device)
+        results[name] = metrics
+        print(f"{name:15s} | PR-AUC: {metrics['pr_auc']:.4f} | ROC-AUC: {metrics['roc_auc']:.4f} | Macro-F1: {metrics['macro_f1']:.4f}")
 
     os.makedirs("outputs/output_amazon/results", exist_ok=True)
     with open("outputs/output_amazon/results/test_comparison.json", 'w') as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nResults saved to: outputs/output_amazon/results/test_comparison.json")
+    print("\nResults saved!")
 
 
 if __name__ == "__main__":
