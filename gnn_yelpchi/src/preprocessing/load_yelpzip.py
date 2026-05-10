@@ -15,6 +15,16 @@ CONFIG = {
 
 
 def load_yelpzip():
+    """
+    YelpChi 데이터 로드 (.mat 파일)
+
+    구조:
+    - rur: Review-User-Review 그래프 (sparse)
+    - rtr: Review-Tag-Review 그래프 (sparse)
+    - rsr: Review-Store-Review 그래프 (sparse)
+    - features: 노드 특징
+    - label: 노드 라벨
+    """
     raw_path = os.path.join(CONFIG["raw_dir"], CONFIG["filename"])
 
     if not os.path.exists(raw_path):
@@ -33,19 +43,29 @@ def load_yelpzip():
 
     print(f"  .mat 파일 내 변수: {list(mat_data.keys())}")
 
-    # DataFrame 변환
-    # 주요 변수들 (MATLAB에서 저장된 구조에 따라 조정 필요)
-    if 'net' in mat_data:
-        # 네트워크 구조가 있으면
-        df = _convert_mat_to_dataframe(mat_data)
-    else:
-        # 테이블 형태면 직접 변환
-        df = _convert_mat_array_to_dataframe(mat_data)
+    # 데이터 구조 확인
+    result = {
+        'num_nodes': mat_data['label'].shape[1] if mat_data['label'].ndim > 1 else len(mat_data['label']),
+        'label': mat_data['label'].flatten().astype(int),
+        'features': mat_data['features'],
+    }
 
-    print(f"  총 행 수: {len(df)}")
-    print(f"  컬럼: {list(df.columns)}")
+    # 그래프 구조
+    if 'rur' in mat_data:
+        from scipy import sparse
+        result['rur'] = sparse.csr_matrix(mat_data['rur'])
+    if 'rtr' in mat_data:
+        from scipy import sparse
+        result['rtr'] = sparse.csr_matrix(mat_data['rtr'])
+    if 'rsr' in mat_data:
+        from scipy import sparse
+        result['rsr'] = sparse.csr_matrix(mat_data['rsr'])
 
-    return df
+    print(f"  Num nodes: {result['num_nodes']}")
+    print(f"  Feature shape: {result['features'].shape}")
+    print(f"  Label distribution: {np.bincount(result['label'])}")
+
+    return result
 
 
 def _convert_mat_to_dataframe(mat_data):
