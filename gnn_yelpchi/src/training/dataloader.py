@@ -8,9 +8,17 @@ from torch.utils.data import Dataset, DataLoader
 
 class GraphDataset(Dataset):
     def __init__(self, features, labels, edge_indices, indices=None):
-        self.features = torch.from_numpy(features).float()
-        self.labels = torch.from_numpy(labels).long()
-        self.edge_indices = [torch.from_numpy(ei).long() for ei in edge_indices]
+        self.features = torch.from_numpy(features).float() if isinstance(features, np.ndarray) else features.float()
+        self.labels = torch.from_numpy(labels).long() if isinstance(labels, np.ndarray) else labels.long()
+
+        # Handle edge_indices - can be either numpy arrays or tensors
+        self.edge_indices = []
+        for ei in edge_indices:
+            if isinstance(ei, np.ndarray):
+                self.edge_indices.append(torch.from_numpy(ei).long())
+            else:
+                self.edge_indices.append(ei.long())
+
         self.indices = indices if indices is not None else np.arange(len(labels))
 
     def __len__(self):
