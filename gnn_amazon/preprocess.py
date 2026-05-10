@@ -62,6 +62,7 @@ def save_amazon_data(data_dict):
     print(f"  Label distribution: {np.bincount(labels)}")
 
     # 그래프 구조 저장 (edge_index 형식으로 변환)
+    num_nodes = len(labels)
     edge_data = {}
     for net_name in ['net_upu', 'net_usu', 'net_uvu', 'homo']:
         if net_name in data_dict:
@@ -74,6 +75,14 @@ def save_amazon_data(data_dict):
                 edge_index = torch.from_numpy(
                     np.array(adj.nonzero())
                 ).long()
+
+            # Validate edge_index
+            if edge_index.numel() > 0:
+                max_node = edge_index.max().item()
+                if max_node >= num_nodes:
+                    print(f"  WARNING: {net_name} has node index {max_node} >= {num_nodes}, clipping...")
+                    # Clip invalid indices
+                    edge_index = edge_index[:, (edge_index[0] < num_nodes) & (edge_index[1] < num_nodes)]
 
             edge_data[net_name] = edge_index
             print(f"[Save] {net_name}: {edge_index.shape}")

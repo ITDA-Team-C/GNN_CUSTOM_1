@@ -107,10 +107,24 @@ def main():
     hidden_channels = 64
     out_channels = 1  # Binary classification
     num_relations = 4
+    num_nodes = features.shape[0]
 
     print(f"Features shape: {features.shape}")
     print(f"Labels shape: {labels.shape}")
     print(f"Number of relations: {num_relations}\n")
+
+    # Validate edge indices
+    print("Validating edge indices...")
+    for i, ei in enumerate(edge_indices):
+        if ei.numel() > 0:
+            max_node = ei.max().item()
+            min_node = ei.min().item()
+            print(f"  Relation {i}: min_node={min_node}, max_node={max_node}, num_nodes={num_nodes}")
+            if max_node >= num_nodes:
+                print(f"    ERROR: Node index {max_node} exceeds num_nodes {num_nodes}!")
+        else:
+            print(f"  Relation {i}: Empty edge_index")
+    print()
 
     print("Creating data loaders...")
     train_loader, val_loader, test_loader = create_data_loaders(
