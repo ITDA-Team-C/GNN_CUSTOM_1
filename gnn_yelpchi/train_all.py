@@ -37,20 +37,37 @@ def load_data():
     return features, labels, edge_indices, train_idx, val_idx, test_idx
 
 
-def validate_edge_indices(edge_indices, num_nodes):
+def validate_edge_indices(edge_indices, num_nodes, features_shape):
     """Validate edge indices"""
     relation_names = ['rur', 'rtr', 'rsr']
-    for ei, name in zip(edge_indices, relation_names):
+    print(f"\n[Edge Index Validation]")
+    print(f"  num_nodes={num_nodes}, features_shape={features_shape}")
+
+    for i, (ei, name) in enumerate(zip(edge_indices, relation_names)):
         if ei.numel() == 0:
-            print(f"  WARNING: {name} is empty!")
+            print(f"  {name}: EMPTY!")
             continue
-        max_idx = ei.max().item()
-        min_idx = ei.min().item()
-        print(f"  {name}: shape={ei.shape}, min={min_idx}, max={max_idx}, num_nodes={num_nodes}")
-        if max_idx >= num_nodes or min_idx < 0:
-            print(f"    ERROR: Invalid node indices! Clipping...")
-            ei = ei[:, (ei[0] < num_nodes) & (ei[1] < num_nodes) & (ei[0] >= 0) & (ei[1] >= 0)]
-            print(f"    After clipping: shape={ei.shape}")
+
+        max_src = ei[0].max().item() if ei.shape[1] > 0 else -1
+        min_src = ei[0].min().item() if ei.shape[1] > 0 else -1
+        max_dst = ei[1].max().item() if ei.shape[1] > 0 else -1
+        min_dst = ei[1].min().item() if ei.shape[1] > 0 else -1
+
+        print(f"  {name}:")
+        print(f"    shape={ei.shape}, dtype={ei.dtype}")
+        print(f"    src: min={min_src}, max={max_src}")
+        print(f"    dst: min={min_dst}, max={max_dst}")
+
+        if max_src >= num_nodes or max_dst >= num_nodes or min_src < 0 or min_dst < 0:
+            print(f"    ERROR: Out of bounds! Expected [0, {num_nodes-1}]")
+
+            # Filter
+            mask = (ei[0] >= 0) & (ei[0] < num_nodes) & (ei[1] >= 0) & (ei[1] < num_nodes)
+            invalid_count = (~mask).sum().item()
+            edge_indices[i] = ei[:, mask]
+            print(f"    Fixed: removed {invalid_count} invalid edges, new shape={edge_indices[i].shape}")
+        else:
+            print(f"    OK ✓")
 
 
 def train_model(model, device, train_loader, val_loader, test_loader, edge_indices,
@@ -108,7 +125,7 @@ def main():
 
     print("Validating edge indices...")
     num_nodes = len(labels)
-    validate_edge_indices(edge_indices, num_nodes)
+    validate_edge_indices(edge_indices, num_nodes, features.shape)
     print()
 
     train_loader, val_loader, test_loader = create_data_loaders(
