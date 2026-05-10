@@ -10,7 +10,7 @@ set_seed(42)
 CONFIG = {
     "raw_dir": "data/raw",
     "interim_dir": "data/interim",
-    "filename": "yelp_zip.mat",  # .mat 파일
+    "filename": "yelpchi.mat",  # .mat 파일
 }
 
 
@@ -29,8 +29,8 @@ def load_yelpchi():
 
     if not os.path.exists(raw_path):
         raise FileNotFoundError(
-            f"YelpZip 파일을 찾을 수 없습니다: {raw_path}\n"
-            f"data/raw/ 폴더에 YelpZip .mat 파일을 배치하세요."
+            f"YelpChi 파일을 찾을 수 없습니다: {raw_path}\n"
+            f"data/raw/ 폴더에 yelpchi.mat 파일을 배치하세요."
         )
 
     print(f"[Load] {raw_path} 로딩 중...")
