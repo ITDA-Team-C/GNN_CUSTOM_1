@@ -52,13 +52,17 @@ def save_yelpchi_data(data_dict):
                     np.array(adj.nonzero())
                 ).long()
 
-            # Validate edge_index
+            # Validate and filter edge_index
             if edge_index.numel() > 0:
-                max_node = edge_index.max().item()
-                if max_node >= num_nodes:
-                    print(f"  WARNING: {net_name} has node index {max_node} >= {num_nodes}, clipping...")
-                    # Clip invalid indices
-                    edge_index = edge_index[:, (edge_index[0] < num_nodes) & (edge_index[1] < num_nodes)]
+                before_count = edge_index.shape[1]
+                # Keep only valid edges
+                mask = (edge_index[0] >= 0) & (edge_index[0] < num_nodes) & \
+                       (edge_index[1] >= 0) & (edge_index[1] < num_nodes)
+                edge_index = edge_index[:, mask]
+                after_count = edge_index.shape[1]
+
+                if before_count != after_count:
+                    print(f"  [{net_name}] Filtered {before_count - after_count} invalid edges")
 
             edge_data[net_name] = edge_index
             print(f"[Save] {net_name}: {edge_index.shape}")
