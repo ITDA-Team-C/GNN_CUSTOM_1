@@ -96,7 +96,7 @@ def main():
         model.load_state_dict(torch.load(model_path, map_location=device))
         model.to(device)
 
-        metrics, y_true, y_pred_proba = evaluate(model, test_loader, device)
+        metrics, y_true, y_pred_proba = evaluate(model, test_loader, edge_indices, device)
         results[model_name] = metrics
 
         print(f"  PR-AUC: {metrics['pr_auc']:.4f}, "

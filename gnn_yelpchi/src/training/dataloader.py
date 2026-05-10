@@ -28,7 +28,8 @@ class GraphDataset(Dataset):
         node_idx = self.indices[idx]
         x = self.features[node_idx]
         y = self.labels[node_idx]
-        return x, y, self.edge_indices
+        # Return only node features and labels, not edge_indices (shared across batch)
+        return x, y
 
 
 def create_data_loaders(features, labels, edge_indices, train_idx, val_idx, test_idx, batch_size=1024):

@@ -57,19 +57,21 @@ def compute_metrics(y_true, y_pred_proba):
     }
 
 
-def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, device, aux_weight=0.3):
+def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, edge_indices, device, aux_weight=0.3):
     model.train()
     total_loss = 0.0
     batch_count = 0
 
-    for x, y, edge_indices in train_loader:
+    # Move edge_indices to device once
+    edge_indices_device = [ei.to(device) for ei in edge_indices]
+
+    for x, y in train_loader:
         x = x.to(device)
         y = y.to(device).long()
-        edge_indices = [ei.to(device) for ei in edge_indices]
 
         optimizer.zero_grad()
 
-        logits, aux_logits, _ = model(x, edge_indices, training=True)
+        logits, aux_logits, _ = model(x, edge_indices_device, training=True)
         logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
 
         if hasattr(model, 'compute_loss'):
@@ -87,17 +89,19 @@ def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, device
 
 
 @torch.no_grad()
-def evaluate(model, eval_loader, device):
+def evaluate(model, eval_loader, edge_indices, device):
     model.eval()
     y_true = []
     y_pred_proba = []
 
-    for x, y, edge_indices in eval_loader:
+    # Move edge_indices to device once
+    edge_indices_device = [ei.to(device) for ei in edge_indices]
+
+    for x, y in eval_loader:
         x = x.to(device)
         y = y.to(device)
-        edge_indices = [ei.to(device) for ei in edge_indices]
 
-        logits, _, _ = model(x, edge_indices, training=False)
+        logits, _, _ = model(x, edge_indices_device, training=False)
         logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
 
         proba = torch.sigmoid(logits).cpu().numpy()

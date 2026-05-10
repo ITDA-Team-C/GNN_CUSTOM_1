@@ -47,7 +47,7 @@ def get_device():
         return torch.device('cpu')
 
 
-def train_model(model, device, train_loader, val_loader, test_loader,
+def train_model(model, device, train_loader, val_loader, test_loader, edge_indices,
                 epochs=200, patience=20, aux_weight=0.3):
     """
     Train a single model with early stopping
@@ -65,9 +65,9 @@ def train_model(model, device, train_loader, val_loader, test_loader,
 
     for epoch in range(epochs):
         avg_loss = train_epoch(model, optimizer, criterion_main, criterion_aux,
-                              train_loader, device, aux_weight)
+                              train_loader, edge_indices, device, aux_weight)
 
-        val_metrics, _, _ = evaluate(model, val_loader, device)
+        val_metrics, _, _ = evaluate(model, val_loader, edge_indices, device)
         val_pr_auc = val_metrics['pr_auc']
 
         if val_pr_auc > best_val_pr_auc:
@@ -75,7 +75,7 @@ def train_model(model, device, train_loader, val_loader, test_loader,
             patience_counter = 0
             best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
-            test_metrics, _, _ = evaluate(model, test_loader, device)
+            test_metrics, _, _ = evaluate(model, test_loader, edge_indices, device)
             best_metrics = test_metrics
         else:
             patience_counter += 1
@@ -139,7 +139,7 @@ def main():
     for model_name, model in models_config.items():
         print(f"Training {model_name}...")
 
-        metrics = train_model(model, device, train_loader, val_loader, test_loader)
+        metrics = train_model(model, device, train_loader, val_loader, test_loader, edge_indices)
         results[model_name] = metrics
 
         torch.save(model.state_dict(), f"outputs/output_yelpchi/models/{model_name}.pt")
