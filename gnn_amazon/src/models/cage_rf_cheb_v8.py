@@ -119,15 +119,19 @@ class CAGERFCHEBV8(nn.Module):
 
     def compute_loss(self, logits, aux_logits, y, criterion_main, criterion_aux, aux_weight=0.3):
         """
-        Main Loss + Auxiliary Loss
+        Main Loss + Auxiliary Loss (both use Focal Loss for binary classification)
         """
         # Main loss
         main_loss = criterion_main(logits, y)
 
-        # Auxiliary loss
-        aux_loss = torch.stack([
-            criterion_aux(aux_logit, y) for aux_logit in aux_logits
-        ]).mean()
+        # Auxiliary loss (use same criterion as main for binary classification)
+        if len(aux_logits) > 0:
+            aux_loss = torch.stack([
+                criterion_main(aux_logit.squeeze(-1) if aux_logit.shape[-1] == 1 else aux_logit, y)
+                for aux_logit in aux_logits
+            ]).mean()
+        else:
+            aux_loss = torch.tensor(0.0, device=logits.device)
 
         # Combined loss
         total_loss = main_loss + aux_weight * aux_loss

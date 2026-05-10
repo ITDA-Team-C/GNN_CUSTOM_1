@@ -105,7 +105,7 @@ def main():
 
     in_channels = features.shape[1]
     hidden_channels = 64
-    out_channels = 2
+    out_channels = 1  # Binary classification
     num_relations = 4
 
     print(f"Features shape: {features.shape}")

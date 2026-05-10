@@ -67,7 +67,7 @@ def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, edge_i
 
     for x, y in train_loader:
         x = x.to(device)
-        y = y.to(device).long()
+        y = y.to(device).float()
 
         optimizer.zero_grad()
 
@@ -77,7 +77,7 @@ def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, edge_i
         if hasattr(model, 'compute_loss'):
             loss, _, _ = model.compute_loss(logits, aux_logits, y, criterion, criterion_aux, aux_weight)
         else:
-            loss = criterion(logits.view(-1), y.view(-1).float())
+            loss = criterion(logits, y)
 
         loss.backward()
         optimizer.step()
