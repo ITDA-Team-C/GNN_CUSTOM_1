@@ -39,12 +39,11 @@ class CAGERFCHEBV9(nn.Module):
             ]) for _ in range(num_relations)
         ])
 
-        # Gating Mechanism: 각 relation의 중요도 학습
+        # Gating Mechanism: 각 relation의 중요도 학습 (softmax over relations applied in forward)
         self.gating = nn.Sequential(
             nn.Linear(hidden_channels, hidden_channels),
             nn.ReLU(),
             nn.Linear(hidden_channels, 1),
-            nn.Softmax(dim=0)
         )
 
         # ===== STAGE 2: Refinement Layer =====
@@ -54,12 +53,11 @@ class CAGERFCHEBV9(nn.Module):
             for _ in range(num_relations)
         ])
 
-        # Refined gating (Stage 2)
+        # Refined gating (Stage 2) - softmax over relations applied in forward
         self.refined_gating = nn.Sequential(
             nn.Linear(hidden_channels, hidden_channels),
             nn.ReLU(),
             nn.Linear(hidden_channels, 1),
-            nn.Softmax(dim=0)
         )
 
         # Auxiliary Loss를 위한 relation-specific classifiers
@@ -105,21 +103,13 @@ class CAGERFCHEBV9(nn.Module):
             if training:
                 aux_logits.append(self.aux_classifiers[rel_idx](x_rel))
 
-        # Stage 1 Gating weights
-        relation_embeddings_s1 = torch.stack(relation_embeddings)  # (num_relations, N, hidden)
-
-        gate_weights_s1 = []
-        for h in relation_embeddings_s1:
-            w = self.gating(h)  # (N, 1)
-            gate_weights_s1.append(w)
-
-        gate_weights_s1 = torch.cat(gate_weights_s1, dim=1)  # (N, num_relations)
+        # Stage 1 Gating: softmax over relations
+        relation_stack_s1 = torch.stack(relation_embeddings, dim=1)  # (N, num_relations, hidden)
+        gate_logits_s1 = self.gating(relation_stack_s1)  # (N, num_relations, 1)
+        alpha_s1 = torch.softmax(gate_logits_s1, dim=1)  # softmax over relations
 
         # Stage 1 Fusion
-        h_fused_s1 = torch.sum(
-            relation_embeddings_s1.transpose(0, 1) * gate_weights_s1.unsqueeze(2),
-            dim=1
-        )  # (N, hidden)
+        h_fused_s1 = (alpha_s1 * relation_stack_s1).sum(dim=1)  # (N, hidden)
 
         # ===== STAGE 2: Adaptive Refinement =====
         relation_embeddings_s2 = []
@@ -141,21 +131,13 @@ class CAGERFCHEBV9(nn.Module):
 
             relation_embeddings_s2.append(x_s2)
 
-        # Stage 2 Gating weights (refined)
-        relation_embeddings_s2 = torch.stack(relation_embeddings_s2)  # (num_relations, N, hidden)
-
-        gate_weights_s2 = []
-        for h in relation_embeddings_s2:
-            w = self.refined_gating(h)  # (N, 1)
-            gate_weights_s2.append(w)
-
-        gate_weights_s2 = torch.cat(gate_weights_s2, dim=1)  # (N, num_relations)
+        # Stage 2 Gating: softmax over relations
+        relation_stack_s2 = torch.stack(relation_embeddings_s2, dim=1)  # (N, num_relations, hidden)
+        gate_logits_s2 = self.refined_gating(relation_stack_s2)  # (N, num_relations, 1)
+        alpha_s2 = torch.softmax(gate_logits_s2, dim=1)  # softmax over relations
 
         # Stage 2 Fusion (Final refined embedding)
-        h_fused_s2 = torch.sum(
-            relation_embeddings_s2.transpose(0, 1) * gate_weights_s2.unsqueeze(2),
-            dim=1
-        )  # (N, hidden)
+        h_fused_s2 = (alpha_s2 * relation_stack_s2).sum(dim=1)  # (N, hidden)
 
         # Combine Stage 1 and Stage 2 (skip connection between stages)
         h_final = h_fused_s2 + h_fused_s1  # Residual connection between stages

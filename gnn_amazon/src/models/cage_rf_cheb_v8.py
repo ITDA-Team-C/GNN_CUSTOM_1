@@ -39,12 +39,11 @@ class CAGERFCHEBV8(nn.Module):
         # Skip connection 처리를 위한 projection
         self.skip_proj = nn.Linear(in_channels + hidden_channels, hidden_channels)
 
-        # Gating Mechanism: 각 relation의 중요도 학습
+        # Gating Mechanism: 각 relation의 중요도 학습 (softmax over relations)
         self.gating = nn.Sequential(
             nn.Linear(hidden_channels, hidden_channels),
             nn.ReLU(),
             nn.Linear(hidden_channels, 1),
-            nn.Softmax(dim=0)
         )
 
         # Auxiliary Loss를 위한 relation-specific classifiers
@@ -97,20 +96,15 @@ class CAGERFCHEBV8(nn.Module):
                 aux_logits.append(self.aux_classifiers[rel_idx](x_rel))
 
         # Gating mechanism: compute weights for each relation
-        relation_embeddings = torch.stack(relation_embeddings)  # (num_relations, N, hidden_channels)
+        # (num_relations, N, hidden_channels) → (N, num_relations, hidden_channels)
+        relation_stack = torch.stack(relation_embeddings, dim=1)  # (N, num_relations, hidden)
 
-        gate_weights = []
-        for h in relation_embeddings:  # (N, hidden_channels) for each relation
-            w = self.gating(h)  # (N, 1)
-            gate_weights.append(w)
-
-        gate_weights = torch.cat(gate_weights, dim=1)  # (N, num_relations)
+        # Compute gating logits per relation, then softmax over relations
+        gate_logits = self.gating(relation_stack)  # (N, num_relations, 1)
+        alpha = torch.softmax(gate_logits, dim=1)  # softmax over relations
 
         # Weighted fusion
-        h_fused = torch.sum(
-            relation_embeddings.transpose(0, 1) * gate_weights.unsqueeze(2),
-            dim=1
-        )  # (N, hidden_channels)
+        h_fused = (alpha * relation_stack).sum(dim=1)  # (N, hidden_channels)
 
         # Main classifier
         logits = self.classifier(h_fused)

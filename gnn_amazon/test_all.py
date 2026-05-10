@@ -5,6 +5,7 @@ import os
 import json
 import numpy as np
 import torch
+from sklearn.preprocessing import StandardScaler
 
 from src.training.utils import evaluate
 from src.models.base_models import (
@@ -41,6 +42,11 @@ def main():
 
     print("Loading data...")
     features, labels, edge_indices, train_idx, val_idx, test_idx = load_data()
+
+    # Normalize features using train set statistics only
+    scaler = StandardScaler()
+    scaler.fit(features[train_idx])
+    features = scaler.transform(features).astype(np.float32)
 
     # Move all data to device
     features = torch.from_numpy(features).float().to(device)

@@ -77,6 +77,7 @@ def train_epoch(model, optimizer, criterion, criterion_aux,
         loss = criterion(train_logits, train_labels)
 
     loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     optimizer.step()
 
     return loss.item()

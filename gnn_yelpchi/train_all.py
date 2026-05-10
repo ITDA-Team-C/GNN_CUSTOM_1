@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from datetime import datetime
+from sklearn.preprocessing import StandardScaler
 
 from src.training.utils import FocalLoss, train_epoch, evaluate
 from src.models.base_models import (
@@ -114,6 +115,13 @@ def main():
 
     print(f"Features: {features.shape}, Labels: {labels.shape}")
     print(f"Train: {len(train_idx)}, Val: {len(val_idx)}, Test: {len(test_idx)}\n")
+
+    # Normalize features using train set statistics only
+    print("Normalizing features...")
+    scaler = StandardScaler()
+    scaler.fit(features[train_idx])
+    features = scaler.transform(features).astype(np.float32)
+    print(f"  Mean: {features.mean():.4f}, Std: {features.std():.4f}\n")
 
     print("Validating edge indices...")
     num_nodes = len(labels)
