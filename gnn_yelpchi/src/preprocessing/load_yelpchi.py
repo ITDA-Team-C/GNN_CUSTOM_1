@@ -107,7 +107,7 @@ def _convert_mat_to_dataframe(mat_data):
         raise ValueError(
             f"예상되는 변수를 찾을 수 없습니다.\n"
             f"사용 가능한 변수: {list(mat_data.keys())}\n"
-            f"load_yelpzip.py의 _convert_mat_to_dataframe() 함수를 수정하세요."
+            f"load_yelpchi.py의 _convert_mat_to_dataframe() 함수를 수정하세요."
         )
 
     return pd.DataFrame(data_dict)
@@ -157,7 +157,7 @@ def save_raw_eda(df):
     eda_path = os.path.join(CONFIG["interim_dir"], "raw_eda.txt")
 
     with open(eda_path, "w", encoding="utf-8") as f:
-        f.write("=== YelpZip Raw Data EDA ===\n\n")
+        f.write("=== YelpChi Raw Data EDA ===\n\n")
         f.write(f"Shape: {df.shape}\n")
         f.write(f"Memory: {df.memory_usage(deep=True).sum() / 1024 / 1024:.2f} MB\n\n")
 
@@ -188,7 +188,7 @@ def save_processed_data(df):
 
 
 if __name__ == "__main__":
-    df = load_yelpzip()
+    df = load_yelpchi()
     df = validate_columns(df)
     save_raw_eda(df)
     df = save_processed_data(df)

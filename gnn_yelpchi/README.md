@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 ### 2. 데이터 준비
 ```bash
-# data/raw/ 폴더에 yelp_zip.csv 파일 배치
+# data/raw/ 폴더에 yelpchi.mat 파일 배치
 # 필수 컬럼: review_id, user_id, prod_id, text, date, rating, label
 ```
 
@@ -59,7 +59,7 @@ python run_baselines.py
 gnn_yelpchi/
 ├── src/
 │   ├── preprocessing/    # 데이터 전처리
-│   │   ├── load_yelpzip.py
+│   │   ├── load_yelpchi.py
 │   │   ├── label_convert.py
 │   │   ├── sampling.py
 │   │   └── feature_engineering.py
@@ -86,7 +86,7 @@ gnn_yelpchi/
 
 각 모듈의 CONFIG 딕셔너리를 수정하여 커스터마이징 가능:
 
-- `load_yelpzip.py`: 데이터 파일명, 디렉토리
+- `load_yelpchi.py`: 데이터 파일명, 디렉토리
 - `sampling.py`: 샘플 크기, 분할 비율
 - `feature_engineering.py`: SVD 차원, TF-IDF 파라미터
 - `build_*.py`: 엣지 k값 (이웃 수 제한)
