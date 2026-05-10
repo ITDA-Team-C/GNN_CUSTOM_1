@@ -43,50 +43,89 @@ def create_train_val_test_split(labels, train_ratio=0.64, val_ratio=0.16):
     return split_data
 
 
+def sample_nodes(data_dict, sample_size=10000):
+    """10,000개 노드 샘플링"""
+    num_nodes = data_dict['num_nodes']
+    labels = data_dict['label']
+
+    print(f"\n[Sampling] Total nodes: {num_nodes} → Sample size: {sample_size}")
+
+    if num_nodes <= sample_size:
+        print(f"  No sampling needed (already {num_nodes} <= {sample_size})")
+        return list(range(num_nodes))
+
+    # 라벨 분포를 유지하면서 샘플링
+    sampled_indices = []
+    for label_val in np.unique(labels):
+        label_indices = np.where(labels == label_val)[0]
+        label_count = len(label_indices)
+        ratio = label_count / num_nodes
+        sample_count = int(sample_size * ratio)
+
+        sampled = np.random.choice(label_indices, size=min(sample_count, label_count), replace=False)
+        sampled_indices.extend(sampled)
+
+    # 정확히 sample_size가 되도록 조정
+    sampled_indices = np.array(sampled_indices)[:sample_size]
+    sampled_indices = np.sort(sampled_indices)
+
+    print(f"  Sampled: {len(sampled_indices)} nodes")
+    print(f"  Label distribution: {np.bincount(labels[sampled_indices])}")
+
+    return sampled_indices
+
+
 def save_amazon_data(data_dict):
     """Amazon 데이터를 PyG 호환 형식으로 저장"""
     os.makedirs("data/processed", exist_ok=True)
+
+    # 노드 샘플링
+    sampled_indices = sample_nodes(data_dict, sample_size=10000)
+    sampled_mask = np.zeros(data_dict['num_nodes'], dtype=bool)
+    sampled_mask[sampled_indices] = True
 
     # Features 저장
     features = data_dict['features']
     if sparse.issparse(features):
         features = features.toarray()
+    features = features[sampled_indices]
 
     np.save("data/processed/features.npy", features)
     print(f"[Save] Features: {features.shape}")
 
     # 라벨 저장
-    labels = data_dict['label']
+    labels = data_dict['label'][sampled_indices]
     np.save("data/processed/labels.npy", labels)
     print(f"[Save] Labels: {labels.shape}")
     print(f"  Label distribution: {np.bincount(labels)}")
 
     # 그래프 구조 저장 (edge_index 형식으로 변환)
-    num_nodes = len(labels)
+    num_sampled_nodes = len(sampled_indices)
     edge_data = {}
+
+    # 샘플링된 노드 인덱스 매핑 (원본 idx → 새 idx)
+    node_mapping = {old_idx: new_idx for new_idx, old_idx in enumerate(sampled_indices)}
+
     for net_name in ['net_upu', 'net_usu', 'net_uvu', 'homo']:
         if net_name in data_dict:
             adj = data_dict[net_name]
             if sparse.issparse(adj):
-                edge_index = torch.from_numpy(
-                    np.array(adj.nonzero())
-                ).long()
+                src, dst = adj.nonzero()
             else:
-                edge_index = torch.from_numpy(
-                    np.array(adj.nonzero())
-                ).long()
+                src, dst = np.array(adj).nonzero()
 
-            # Validate and filter edge_index
-            if edge_index.numel() > 0:
-                before_count = edge_index.shape[1]
-                # Keep only valid edges
-                mask = (edge_index[0] >= 0) & (edge_index[0] < num_nodes) & \
-                       (edge_index[1] >= 0) & (edge_index[1] < num_nodes)
-                edge_index = edge_index[:, mask]
-                after_count = edge_index.shape[1]
+            # 샘플링된 노드들만 포함하는 엣지 필터링
+            edge_mask = sampled_mask[src] & sampled_mask[dst]
+            src_filtered = src[edge_mask]
+            dst_filtered = dst[edge_mask]
 
-                if before_count != after_count:
-                    print(f"  [{net_name}] Filtered {before_count - after_count} invalid edges")
+            # 노드 인덱스 재매핑
+            src_remapped = np.array([node_mapping[s] for s in src_filtered])
+            dst_remapped = np.array([node_mapping[d] for d in dst_filtered])
+
+            edge_index = torch.from_numpy(
+                np.array([src_remapped, dst_remapped])
+            ).long()
 
             edge_data[net_name] = edge_index
             print(f"[Save] {net_name}: {edge_index.shape}")
