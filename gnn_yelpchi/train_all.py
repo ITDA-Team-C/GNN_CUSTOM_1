@@ -37,6 +37,22 @@ def load_data():
     return features, labels, edge_indices, train_idx, val_idx, test_idx
 
 
+def validate_edge_indices(edge_indices, num_nodes):
+    """Validate edge indices"""
+    relation_names = ['rur', 'rtr', 'rsr']
+    for ei, name in zip(edge_indices, relation_names):
+        if ei.numel() == 0:
+            print(f"  WARNING: {name} is empty!")
+            continue
+        max_idx = ei.max().item()
+        min_idx = ei.min().item()
+        print(f"  {name}: shape={ei.shape}, min={min_idx}, max={max_idx}, num_nodes={num_nodes}")
+        if max_idx >= num_nodes or min_idx < 0:
+            print(f"    ERROR: Invalid node indices! Clipping...")
+            ei = ei[:, (ei[0] < num_nodes) & (ei[1] < num_nodes) & (ei[0] >= 0) & (ei[1] >= 0)]
+            print(f"    After clipping: shape={ei.shape}")
+
+
 def train_model(model, device, train_loader, val_loader, test_loader, edge_indices,
                 epochs=200, patience=20, aux_weight=0.3):
     """Train single model"""
@@ -89,6 +105,11 @@ def main():
 
     print(f"Features: {features.shape}, Labels: {labels.shape}")
     print(f"Train: {len(train_idx)}, Val: {len(val_idx)}, Test: {len(test_idx)}\n")
+
+    print("Validating edge indices...")
+    num_nodes = len(labels)
+    validate_edge_indices(edge_indices, num_nodes)
+    print()
 
     train_loader, val_loader, test_loader = create_data_loaders(
         features, labels, edge_indices, train_idx, val_idx, test_idx, batch_size=256
