@@ -51,7 +51,7 @@ def sample_nodes(data_dict, sample_size=10000):
     return sampled_indices
 
 
-def save_yelpchi_data(data_dict):
+def save_yelpchi_data(data_dict, sample_size=30000):
     """YelpChi 데이터를 PyG 호환 형식으로 저장"""
     os.makedirs("data/processed", exist_ok=True)
 
@@ -110,7 +110,7 @@ def save_yelpchi_data(data_dict):
 
     # 메타정보 저장
     meta = {
-        'num_nodes': data_dict['num_nodes'],
+        'num_nodes': len(sampled_indices),
         'num_features': features.shape[1],
         'num_classes': len(np.unique(labels)),
         'edge_types': list(edge_data.keys()),
@@ -120,6 +120,8 @@ def save_yelpchi_data(data_dict):
         json.dump(meta, f, indent=2)
 
     print(f"\n[Meta] Nodes: {meta['num_nodes']}, Features: {meta['num_features']}")
+
+    return labels
 
 
 def create_train_val_test_split(labels, train_ratio=0.64, val_ratio=0.16):
@@ -158,11 +160,11 @@ def main():
 
     # Step 2: Preprocess & Save
     print("\n[Step 2/2] 전처리된 데이터 저장...")
-    save_yelpchi_data(data_dict)
+    sampled_labels = save_yelpchi_data(data_dict)
 
-    # Step 3: Create splits
+    # Step 3: Create splits (샘플링된 라벨로 분할)
     print("\n[Step 3/3] 데이터 분할...")
-    split_data = create_train_val_test_split(data_dict['label'])
+    split_data = create_train_val_test_split(sampled_labels)
 
     print("\n" + "="*80)
     print("YelpChi 전처리 완료!")
