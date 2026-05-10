@@ -63,16 +63,29 @@ def load_amazon():
         'features': features,
     }
 
-    # 그래프 구조
-    graph_keys = ['net_upu', 'net_usu', 'net_uvu', 'homo']
-    for key in graph_keys:
-        if key in mat_data:
-            adj = sparse.csr_matrix(mat_data[key])
-            # Clip adjacency matrix to num_nodes
-            if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
-                print(f"  WARNING: {key} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
-                adj = adj[:num_nodes, :num_nodes]
-            result[key] = adj
+    # 그래프 구조 - 다양한 키 이름 시도
+    key_candidates = {
+        'net_upu': ['net_upu', 'upu', 'NET_UPU', 'UPU', 'u_p_u'],
+        'net_usu': ['net_usu', 'usu', 'NET_USU', 'USU', 'u_s_u'],
+        'net_uvu': ['net_uvu', 'uvu', 'NET_UVU', 'UVU', 'u_v_u'],
+        'homo': ['homo', 'HOMO', 'all', 'full'],
+    }
+
+    for std_key, candidates in key_candidates.items():
+        found = False
+        for cand in candidates:
+            if cand in mat_data:
+                adj = sparse.csr_matrix(mat_data[cand])
+                if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
+                    print(f"  WARNING: {cand} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
+                    adj = adj[:num_nodes, :num_nodes]
+                result[std_key] = adj
+                print(f"  Found {std_key} as '{cand}': {adj.shape}")
+                found = True
+                break
+
+        if not found:
+            print(f"  WARNING: {std_key} not found! Available keys: {list(mat_data.keys())}")
 
     print(f"  Num nodes: {result['num_nodes']}")
     print(f"  Feature shape: {result['features'].shape}")

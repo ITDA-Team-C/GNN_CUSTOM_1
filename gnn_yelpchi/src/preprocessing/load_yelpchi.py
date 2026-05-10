@@ -65,16 +65,30 @@ def load_yelpchi():
         'features': features,
     }
 
-    # 그래프 구조
-    graph_keys = ['rur', 'rtr', 'rsr']
-    for key in graph_keys:
-        if key in mat_data:
-            adj = sparse.csr_matrix(mat_data[key])
-            # Clip adjacency matrix to num_nodes
-            if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
-                print(f"  WARNING: {key} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
-                adj = adj[:num_nodes, :num_nodes]
-            result[key] = adj
+    # 그래프 구조 - 다양한 키 이름 시도
+    # YelpChi 표준: net_rur, net_rtr, net_rsr (또는 rur, rtr, rsr)
+    key_candidates = {
+        'rur': ['rur', 'net_rur', 'RUR', 'NET_RUR', 'r_u_r'],
+        'rtr': ['rtr', 'net_rtr', 'RTR', 'NET_RTR', 'r_t_r'],
+        'rsr': ['rsr', 'net_rsr', 'RSR', 'NET_RSR', 'r_s_r'],
+    }
+
+    for std_key, candidates in key_candidates.items():
+        found = False
+        for cand in candidates:
+            if cand in mat_data:
+                adj = sparse.csr_matrix(mat_data[cand])
+                # Clip adjacency matrix to num_nodes
+                if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
+                    print(f"  WARNING: {cand} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
+                    adj = adj[:num_nodes, :num_nodes]
+                result[std_key] = adj
+                print(f"  Found {std_key} as '{cand}': {adj.shape}")
+                found = True
+                break
+
+        if not found:
+            print(f"  WARNING: {std_key} not found! Available keys: {list(mat_data.keys())}")
 
     print(f"  Num nodes: {result['num_nodes']}")
     print(f"  Feature shape: {result['features'].shape}")

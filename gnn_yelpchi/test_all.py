@@ -26,7 +26,13 @@ def load_data():
     edge_data = torch.load("data/processed/edge_index_dict.pt")
     split_data = torch.load("data/processed/split_idx.pt")
 
-    edge_indices = [edge_data['rur'], edge_data['rtr'], edge_data['rsr']]
+    expected_keys = ['rur', 'rtr', 'rsr']
+    edge_indices = []
+    for key in expected_keys:
+        if key in edge_data:
+            edge_indices.append(edge_data[key])
+        else:
+            raise KeyError(f"Edge key '{key}' not found. Available keys: {list(edge_data.keys())}")
 
     train_idx = split_data['train_idx'].numpy()
     val_idx = split_data['val_idx'].numpy()
