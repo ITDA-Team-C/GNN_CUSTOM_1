@@ -66,12 +66,15 @@ def load_yelpzip():
     }
 
     # 그래프 구조
-    if 'rur' in mat_data:
-        result['rur'] = sparse.csr_matrix(mat_data['rur'])
-    if 'rtr' in mat_data:
-        result['rtr'] = sparse.csr_matrix(mat_data['rtr'])
-    if 'rsr' in mat_data:
-        result['rsr'] = sparse.csr_matrix(mat_data['rsr'])
+    graph_keys = ['rur', 'rtr', 'rsr']
+    for key in graph_keys:
+        if key in mat_data:
+            adj = sparse.csr_matrix(mat_data[key])
+            # Clip adjacency matrix to num_nodes
+            if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
+                print(f"  WARNING: {key} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
+                adj = adj[:num_nodes, :num_nodes]
+            result[key] = adj
 
     print(f"  Num nodes: {result['num_nodes']}")
     print(f"  Feature shape: {result['features'].shape}")

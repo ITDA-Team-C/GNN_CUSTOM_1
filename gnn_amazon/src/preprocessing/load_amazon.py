@@ -64,14 +64,15 @@ def load_amazon():
     }
 
     # 그래프 구조
-    if 'net_upu' in mat_data:
-        result['net_upu'] = sparse.csr_matrix(mat_data['net_upu'])
-    if 'net_usu' in mat_data:
-        result['net_usu'] = sparse.csr_matrix(mat_data['net_usu'])
-    if 'net_uvu' in mat_data:
-        result['net_uvu'] = sparse.csr_matrix(mat_data['net_uvu'])
-    if 'homo' in mat_data:
-        result['homo'] = sparse.csr_matrix(mat_data['homo'])
+    graph_keys = ['net_upu', 'net_usu', 'net_uvu', 'homo']
+    for key in graph_keys:
+        if key in mat_data:
+            adj = sparse.csr_matrix(mat_data[key])
+            # Clip adjacency matrix to num_nodes
+            if adj.shape[0] > num_nodes or adj.shape[1] > num_nodes:
+                print(f"  WARNING: {key} shape {adj.shape} exceeds num_nodes {num_nodes}, clipping...")
+                adj = adj[:num_nodes, :num_nodes]
+            result[key] = adj
 
     print(f"  Num nodes: {result['num_nodes']}")
     print(f"  Feature shape: {result['features'].shape}")
