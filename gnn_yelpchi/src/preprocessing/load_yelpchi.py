@@ -14,7 +14,7 @@ CONFIG = {
 }
 
 
-def load_yelpzip():
+def load_yelpchi():
     """
     YelpChi 데이터 로드 (.mat 파일)
 

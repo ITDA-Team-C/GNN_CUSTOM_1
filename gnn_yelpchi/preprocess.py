@@ -14,7 +14,7 @@ from scipy import sparse
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.utils import set_seed
-from src.preprocessing.load_yelpzip import load_yelpzip
+from src.preprocessing.load_yelpchi import load_yelpchi
 
 set_seed(42)
 
@@ -154,7 +154,7 @@ def main():
 
     # Step 1: Load
     print("\n[Step 1/2] YelpChi 데이터 로드...")
-    data_dict = load_yelpzip()
+    data_dict = load_yelpchi()
 
     # Step 2: Preprocess & Save
     print("\n[Step 2/2] 전처리된 데이터 저장...")
