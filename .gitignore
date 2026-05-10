@@ -60,6 +60,7 @@ logs/
 *.pickle
 *.h5
 *.zip
+*.mat
 
 # OS
 .DS_Store
