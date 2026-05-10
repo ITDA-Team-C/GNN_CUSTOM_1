@@ -56,7 +56,7 @@ def save_yelpchi_data(data_dict):
     os.makedirs("data/processed", exist_ok=True)
 
     # 노드 샘플링
-    sampled_indices = sample_nodes(data_dict, sample_size=10000)
+    sampled_indices = sample_nodes(data_dict, sample_size=30000)
     sampled_mask = np.zeros(data_dict['num_nodes'], dtype=bool)
     sampled_mask[sampled_indices] = True
 
