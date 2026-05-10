@@ -44,10 +44,23 @@ def load_amazon():
     print(f"  Variables: {list(mat_data.keys())}")
 
     # 데이터 구조 확인
+    # Label 처리
+    label = mat_data['label']
+    if label.ndim > 1:
+        label = label.flatten()
+    label = label.astype(int)
+
+    # Features 처리
+    features = mat_data['features']
+    if sparse.issparse(features):
+        features = features.toarray()
+
+    num_nodes = len(label)
+
     result = {
-        'num_nodes': mat_data['label'].shape[1],
-        'label': mat_data['label'].flatten().astype(int),
-        'features': mat_data['features'],
+        'num_nodes': num_nodes,
+        'label': label,
+        'features': features,
     }
 
     # 그래프 구조

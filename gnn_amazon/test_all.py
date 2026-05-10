@@ -26,6 +26,7 @@ def load_preprocessed_data():
     labels = np.load("data/processed/labels.npy")
 
     edge_data = torch.load("data/processed/edge_index_dict.pt")
+    # Keep as tensors - dataloader will handle both numpy and tensor inputs
     edge_indices = [edge_data['net_upu'], edge_data['net_usu'],
                     edge_data['net_uvu'], edge_data['homo']]
 
