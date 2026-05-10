@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import scipy.io as sio
 from pathlib import Path
 from src.utils import set_seed
 
@@ -9,13 +10,13 @@ set_seed(42)
 CONFIG = {
     "raw_dir": "data/raw",
     "interim_dir": "data/interim",
-    "filename": "amazon.csv",  # 사용자가 데이터 파일명 수정 가능
+    "filename": "amazon.mat",  # .mat 파일
 }
 
 
 def load_amazon():
     """
-    Amazon 데이터 로드
+    Amazon 데이터 로드 (.mat 파일)
 
     필요한 컬럼:
     - user_id: 사용자 ID
@@ -29,16 +30,58 @@ def load_amazon():
     if not os.path.exists(raw_path):
         raise FileNotFoundError(
             f"Amazon 파일을 찾을 수 없습니다: {raw_path}\n"
-            f"data/raw/ 폴더에 Amazon CSV 파일을 배치하세요.\n"
+            f"data/raw/ 폴더에 Amazon .mat 파일을 배치하세요.\n"
             f"필수 컬럼: user_id, prod_id, rating, review_text, label"
         )
 
     print(f"[Load] {raw_path} 로딩 중...")
-    df = pd.read_csv(raw_path)
+
+    # .mat 파일 로드
+    mat_data = sio.loadmat(raw_path)
+
+    # 메타 정보 제거 (MATLAB은 메타 정보를 자동으로 추가)
+    mat_data = {k: v for k, v in mat_data.items() if not k.startswith('__')}
+
+    print(f"  .mat 파일 내 변수: {list(mat_data.keys())}")
+
+    # DataFrame 변환
+    df = _convert_mat_to_dataframe(mat_data)
+
     print(f"  총 행 수: {len(df)}")
     print(f"  컬럼: {list(df.columns)}")
 
     return df
+
+
+def _convert_mat_to_dataframe(mat_data):
+    """
+    MATLAB 구조체를 DataFrame으로 변환
+    필요에 따라 수정하세요
+    """
+    data_dict = {}
+
+    # 일반적인 변수명들
+    possible_keys = ['user_id', 'prod_id', 'product_id', 'rating', 'review_text', 'text', 'label']
+
+    for key in possible_keys:
+        if key in mat_data:
+            data = mat_data[key]
+            # numpy 배열을 리스트로 변환
+            if isinstance(data, np.ndarray):
+                if data.dtype.kind in ['U', 'S', 'O']:  # 문자열
+                    data_dict[key] = [str(x).strip() for x in data.flatten()]
+                else:  # 숫자
+                    data_dict[key] = data.flatten().tolist()
+
+    if not data_dict:
+        raise ValueError(
+            f"예상되는 변수를 찾을 수 없습니다.\n"
+            f"사용 가능한 변수: {list(mat_data.keys())}\n"
+            f"load_amazon.py의 _convert_mat_to_dataframe() 함수를 수정하세요."
+        )
+
+    return pd.DataFrame(data_dict)
+
 
 
 def validate_columns(df):
