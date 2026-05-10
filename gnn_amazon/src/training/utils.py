@@ -1,5 +1,5 @@
 """
-Training utilities: Focal Loss, metrics, etc.
+Training utilities: Focal Loss, metrics, full-batch training
 """
 import torch
 import torch.nn as nn
@@ -57,57 +57,44 @@ def compute_metrics(y_true, y_pred_proba):
     }
 
 
-def train_epoch(model, optimizer, criterion, criterion_aux, train_loader, edge_indices, device, aux_weight=0.3):
+def train_epoch(model, optimizer, criterion, criterion_aux,
+                features, labels, edge_indices, train_idx, aux_weight=0.3):
+    """Full-batch training"""
     model.train()
-    total_loss = 0.0
-    batch_count = 0
+    optimizer.zero_grad()
 
-    # Move edge_indices to device once
-    edge_indices_device = [ei.to(device) for ei in edge_indices]
+    logits, aux_logits, _ = model(features, edge_indices, training=True)
+    logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
 
-    for x, y in train_loader:
-        x = x.to(device)
-        y = y.to(device).float()
+    train_logits = logits[train_idx]
+    train_labels = labels[train_idx].float()
 
-        optimizer.zero_grad()
+    if hasattr(model, 'compute_loss') and aux_logits:
+        train_aux_logits = [al[train_idx] if al.dim() > 1 and al.shape[0] == logits.shape[0] else al for al in aux_logits]
+        loss, _, _ = model.compute_loss(train_logits, train_aux_logits, train_labels,
+                                        criterion, criterion_aux, aux_weight)
+    else:
+        loss = criterion(train_logits, train_labels)
 
-        logits, aux_logits, _ = model(x, edge_indices_device, training=True)
-        logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
+    loss.backward()
+    optimizer.step()
 
-        if hasattr(model, 'compute_loss'):
-            loss, _, _ = model.compute_loss(logits, aux_logits, y, criterion, criterion_aux, aux_weight)
-        else:
-            loss = criterion(logits, y)
-
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-        batch_count += 1
-
-    return total_loss / batch_count
+    return loss.item()
 
 
 @torch.no_grad()
-def evaluate(model, eval_loader, edge_indices, device):
+def evaluate(model, features, labels, edge_indices, eval_idx):
+    """Full-batch evaluation"""
     model.eval()
-    y_true = []
-    y_pred_proba = []
 
-    # Move edge_indices to device once
-    edge_indices_device = [ei.to(device) for ei in edge_indices]
+    logits, _, _ = model(features, edge_indices, training=False)
+    logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
 
-    for x, y in eval_loader:
-        x = x.to(device)
-        y = y.to(device)
+    eval_logits = logits[eval_idx]
+    eval_labels = labels[eval_idx]
 
-        logits, _, _ = model(x, edge_indices_device, training=False)
-        logits = logits.squeeze(-1) if logits.shape[-1] == 1 else logits
+    proba = torch.sigmoid(eval_logits).cpu().numpy()
+    y_true = eval_labels.cpu().numpy()
 
-        proba = torch.sigmoid(logits).cpu().numpy()
-
-        y_true.extend(y.cpu().numpy())
-        y_pred_proba.extend(proba)
-
-    metrics = compute_metrics(y_true, y_pred_proba)
-    return metrics, np.array(y_true), np.array(y_pred_proba)
+    metrics = compute_metrics(y_true, proba)
+    return metrics, y_true, proba

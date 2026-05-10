@@ -1,12 +1,11 @@
 """
-Test and compare all 10 Amazon GNN models
+Test and compare all 10 Amazon GNN models (Full-batch)
 """
 import os
 import json
 import numpy as np
 import torch
 
-from src.training.dataloader import create_data_loaders
 from src.training.utils import evaluate
 from src.models.base_models import (
     MLPModel, GCNModel, SAGEModel, GATModel,
@@ -43,9 +42,11 @@ def main():
     print("Loading data...")
     features, labels, edge_indices, train_idx, val_idx, test_idx = load_data()
 
-    _, _, test_loader = create_data_loaders(
-        features, labels, edge_indices, train_idx, val_idx, test_idx, batch_size=256
-    )
+    # Move all data to device
+    features = torch.from_numpy(features).float().to(device)
+    labels = torch.from_numpy(labels).long().to(device)
+    edge_indices = [ei.to(device) for ei in edge_indices]
+    test_idx = torch.from_numpy(test_idx).long().to(device)
 
     in_channels = features.shape[1]
     hidden_channels = 64
@@ -76,7 +77,7 @@ def main():
 
         model.load_state_dict(torch.load(path, map_location=device))
         model.to(device)
-        metrics, _, _ = evaluate(model, test_loader, edge_indices, device)
+        metrics, _, _ = evaluate(model, features, labels, edge_indices, test_idx)
         results[name] = metrics
         print(f"{name:15s} | PR-AUC: {metrics['pr_auc']:.4f} | ROC-AUC: {metrics['roc_auc']:.4f} | Macro-F1: {metrics['macro_f1']:.4f}")
 

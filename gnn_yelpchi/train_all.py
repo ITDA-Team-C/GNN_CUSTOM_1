@@ -1,5 +1,5 @@
 """
-Complete training pipeline for all 10 YelpChi GNN models
+Complete training pipeline for all 10 YelpChi GNN models (Full-batch GNN training)
 """
 import os
 import json
@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from datetime import datetime
 
-from src.training.dataloader import create_data_loaders
 from src.training.utils import FocalLoss, train_epoch, evaluate
 from src.models.base_models import (
     MLPModel, GCNModel, SAGEModel, GATModel,
@@ -53,26 +52,19 @@ def validate_edge_indices(edge_indices, num_nodes, features_shape):
         max_dst = ei[1].max().item() if ei.shape[1] > 0 else -1
         min_dst = ei[1].min().item() if ei.shape[1] > 0 else -1
 
-        print(f"  {name}:")
-        print(f"    shape={ei.shape}, dtype={ei.dtype}")
-        print(f"    src: min={min_src}, max={max_src}")
-        print(f"    dst: min={min_dst}, max={max_dst}")
+        print(f"  {name}: shape={ei.shape}, src=[{min_src},{max_src}], dst=[{min_dst},{max_dst}]")
 
         if max_src >= num_nodes or max_dst >= num_nodes or min_src < 0 or min_dst < 0:
             print(f"    ERROR: Out of bounds! Expected [0, {num_nodes-1}]")
-
-            # Filter
             mask = (ei[0] >= 0) & (ei[0] < num_nodes) & (ei[1] >= 0) & (ei[1] < num_nodes)
             invalid_count = (~mask).sum().item()
             edge_indices[i] = ei[:, mask]
             print(f"    Fixed: removed {invalid_count} invalid edges, new shape={edge_indices[i].shape}")
-        else:
-            print(f"    OK ✓")
 
 
-def train_model(model, device, train_loader, val_loader, test_loader, edge_indices,
+def train_model(model, device, features, labels, edge_indices, train_idx, val_idx, test_idx,
                 epochs=200, patience=20, aux_weight=0.3):
-    """Train single model"""
+    """Train single model with full-batch"""
     criterion = FocalLoss(alpha=0.75, gamma=2.0)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
@@ -84,16 +76,16 @@ def train_model(model, device, train_loader, val_loader, test_loader, edge_indic
 
     for epoch in range(epochs):
         avg_loss = train_epoch(model, optimizer, criterion, criterion,
-                              train_loader, edge_indices, device, aux_weight)
+                              features, labels, edge_indices, train_idx, aux_weight)
 
-        val_metrics, _, _ = evaluate(model, val_loader, edge_indices, device)
+        val_metrics, _, _ = evaluate(model, features, labels, edge_indices, val_idx)
         val_pr_auc = val_metrics['pr_auc']
 
         if val_pr_auc > best_val_pr_auc:
             best_val_pr_auc = val_pr_auc
             patience_counter = 0
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
-            test_metrics, _, _ = evaluate(model, test_loader, edge_indices, device)
+            test_metrics, _, _ = evaluate(model, features, labels, edge_indices, test_idx)
             best_metrics = test_metrics
         else:
             patience_counter += 1
@@ -128,9 +120,13 @@ def main():
     validate_edge_indices(edge_indices, num_nodes, features.shape)
     print()
 
-    train_loader, val_loader, test_loader = create_data_loaders(
-        features, labels, edge_indices, train_idx, val_idx, test_idx, batch_size=256
-    )
+    # Move all data to device once (full-batch GNN)
+    features = torch.from_numpy(features).float().to(device)
+    labels = torch.from_numpy(labels).long().to(device)
+    edge_indices = [ei.to(device) for ei in edge_indices]
+    train_idx = torch.from_numpy(train_idx).long().to(device)
+    val_idx = torch.from_numpy(val_idx).long().to(device)
+    test_idx = torch.from_numpy(test_idx).long().to(device)
 
     in_channels = features.shape[1]
     hidden_channels = 64
@@ -155,7 +151,7 @@ def main():
     print("Training models...")
     for name, model in models.items():
         print(f"\n{name}...")
-        metrics = train_model(model, device, train_loader, val_loader, test_loader, edge_indices)
+        metrics = train_model(model, device, features, labels, edge_indices, train_idx, val_idx, test_idx)
         results[name] = metrics
         torch.save(model.state_dict(), f"outputs/output_yelpchi/models/{name}.pt")
         print(f"  Test: PR-AUC={metrics['pr_auc']:.4f}, ROC-AUC={metrics['roc_auc']:.4f}, Macro-F1={metrics['macro_f1']:.4f}")
