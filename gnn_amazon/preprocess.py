@@ -66,7 +66,15 @@ def sample_nodes(data_dict, sample_size=10000):
         sampled_indices.extend(sampled)
 
     # 정확히 sample_size가 되도록 조정
-    sampled_indices = np.array(sampled_indices)[:sample_size]
+    sampled_indices = np.array(sampled_indices)
+    if len(sampled_indices) > sample_size:
+        sampled_indices = sampled_indices[:sample_size]
+    elif len(sampled_indices) < sample_size:
+        remaining = np.array([i for i in range(num_nodes) if i not in sampled_indices])
+        need = sample_size - len(sampled_indices)
+        extra = np.random.choice(remaining, size=min(need, len(remaining)), replace=False)
+        sampled_indices = np.concatenate([sampled_indices, extra])
+
     sampled_indices = np.sort(sampled_indices)
 
     print(f"  Sampled: {len(sampled_indices)} nodes")
