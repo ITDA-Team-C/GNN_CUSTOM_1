@@ -79,7 +79,7 @@ def save_yelpchi_data(data_dict):
     print(f"\n[Meta] Nodes: {meta['num_nodes']}, Features: {meta['num_features']}")
 
 
-def create_train_val_test_split(labels, train_ratio=0.6, val_ratio=0.2):
+def create_train_val_test_split(labels, train_ratio=0.64, val_ratio=0.16):
     """라벨별 균형있게 분할"""
     num_nodes = len(labels)
     indices = np.arange(num_nodes)
